@@ -6,10 +6,10 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/utils"
 	"gorm.io/sharding"
-	"shortlink/pkg/toolkit"
+	"shortlink/common/toolkit"
 )
 
-func SetupSharding(Db *gorm.DB) {
+func setupSharding(Db *gorm.DB) {
 
 	shardingByUsername := sharding.Register(sharding.Config{
 		ShardingKey:         "username",

@@ -10,5 +10,5 @@ type Queries struct {
 	GetLinkStats               query.GetLinkStatsHandler
 	GroupLinkStats             query.GroupLinkStatsHandler
 	GetLinkStatsAccessRecord   query.GetLinkStatsAccessRecordHandler
-	GroupLinkStatsAccessRecord query.GroupLinkStatsAccessRecord
+	GroupLinkStatsAccessRecord query.GroupLinkStatsAccessRecordHandler
 }

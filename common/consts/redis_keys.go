@@ -29,5 +29,5 @@ const (
 	ShortLinkStatsStreamGroupKey = "short-link:stats-stream:only-group"
 
 	// ShortLinkCreateLockKey 创建短链接锁标识
-	ShortLinkCreateLockKey = "short-link:lock:create"
+	ShortLinkCreateLockKey = "short-link:lock:create:%s"
 )

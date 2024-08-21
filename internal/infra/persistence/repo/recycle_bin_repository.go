@@ -17,6 +17,14 @@ type RecycleBinRepository struct {
 	cvt converter.LinkRecycleBinConverter
 }
 
+func NewRecycleBinRepository(db *gorm.DB, rdb *redis.Client) RecycleBinRepository {
+	return RecycleBinRepository{
+		db:  db,
+		rdb: rdb,
+		cvt: converter.LinkRecycleBinConverter{},
+	}
+}
+
 // SaveToRecycleBin 保存到回收站
 func (r RecycleBinRepository) SaveToRecycleBin(
 	ctx context.Context,

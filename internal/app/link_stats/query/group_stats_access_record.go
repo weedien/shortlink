@@ -2,12 +2,32 @@ package query
 
 import (
 	"context"
+	"log/slog"
+	"shortlink/common/decorator"
 	"shortlink/common/types"
 	"time"
 )
 
-type GroupLinkStatsAccessRecordHandler struct {
+type groupLinkStatsAccessRecordHandler struct {
 	readModel GroupLinkStatsAccessRecordReadModel
+}
+
+type GroupLinkStatsAccessRecordHandler decorator.QueryHandler[GroupLinkStatsAccessRecord, *types.PageResp[LinkStatsAccessRecord]]
+
+func NewGroupLinkStatsAccessRecordHandler(
+	readModel GroupLinkStatsAccessRecordReadModel,
+	logger *slog.Logger,
+	metricsClient metrics.Client,
+) GroupLinkStatsAccessRecordHandler {
+	if readModel == nil {
+		panic("nil readModel")
+	}
+
+	return decorator.ApplyQueryDecorators[GroupLinkStatsAccessRecord, *types.PageResp[LinkStatsAccessRecord]](
+		groupLinkStatsAccessRecordHandler{readModel},
+		logger,
+		metricsClient,
+	)
 }
 
 type GroupLinkStatsAccessRecord struct {
@@ -26,6 +46,6 @@ type GroupLinkStatsAccessRecordReadModel interface {
 	GroupLinkStatsAccessRecord(ctx context.Context, param GroupLinkStatsAccessRecord) (*types.PageResp[LinkStatsAccessRecord], error)
 }
 
-func (h GroupLinkStatsAccessRecordHandler) Handle(ctx context.Context, q GroupLinkStatsAccessRecord) (*types.PageResp[LinkStatsAccessRecord], error) {
+func (h groupLinkStatsAccessRecordHandler) Handle(ctx context.Context, q GroupLinkStatsAccessRecord) (*types.PageResp[LinkStatsAccessRecord], error) {
 	return h.readModel.GroupLinkStatsAccessRecord(ctx, q)
 }

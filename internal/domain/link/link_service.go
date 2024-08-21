@@ -2,9 +2,9 @@ package link
 
 import (
 	"github.com/google/uuid"
+	"shortlink/common/config"
 	"shortlink/common/error_no"
 	"shortlink/common/toolkit"
-	"shortlink/config"
 )
 
 type LinkService struct {

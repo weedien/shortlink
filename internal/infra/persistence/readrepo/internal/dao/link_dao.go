@@ -37,6 +37,23 @@ type LinkGidCountDTO struct {
 	Count int    `json:"count"`
 }
 
+func (d *LinkDao) GetLink(ctx context.Context, id types.LinkID) (po.Link, error) {
+	var link po.Link
+	err := d.db.WithContext(ctx).
+		Where("full_short_url = ? AND gid = ? AND enable_status = 0 AND del_flag = false", id.FullShortUrl, id.Gid).
+		First(&link).Error
+	return link, err
+}
+
+func (d *LinkDao) GetLinkGoto(ctx context.Context, fullShortUrl string) (po.LinkGoto, error) {
+	var linkGoto po.LinkGoto
+	err := d.db.WithContext(ctx).
+		Where("full_short_url = ?", fullShortUrl).
+		First(&linkGoto).Error
+	return linkGoto, err
+
+}
+
 // ListGroupLinkCount 统计分组短链接数量
 func (d *LinkDao) ListGroupLinkCount(ctx context.Context, gidList []string) (res []LinkGidCountDTO, err error) {
 	err = d.db.WithContext(ctx).

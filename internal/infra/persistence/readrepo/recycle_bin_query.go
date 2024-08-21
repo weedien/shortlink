@@ -3,6 +3,7 @@ package readrepo
 import (
 	"context"
 	"github.com/jinzhu/copier"
+	"gorm.io/gorm"
 	"shortlink/common/types"
 	"shortlink/internal/app/recycle_bin/query"
 	"shortlink/internal/infra/persistence/readrepo/internal/dao"
@@ -12,14 +13,14 @@ type RecycleBinQuery struct {
 	linkDao dao.LinkDao
 }
 
-func NewRecycleBinQuery(linkDao dao.LinkDao) RecycleBinQuery {
-	return RecycleBinQuery{linkDao: linkDao}
+func NewRecycleBinQuery(db *gorm.DB) RecycleBinQuery {
+	return RecycleBinQuery{linkDao: dao.NewLinkDao(db)}
 }
 
 // PageDisabledLink 分页统计回收站中的短链接
 func (q RecycleBinQuery) PageDisabledLink(
 	ctx context.Context,
-	param query.PageRecycleBinParam,
+	param query.PageRecycleBin,
 ) (res *types.PageResp[query.LinkQueryDTO], err error) {
 
 	r, err := q.linkDao.PageDisabledLink(ctx, param.GidList, param.Current, param.Size)

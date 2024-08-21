@@ -11,7 +11,7 @@ type ShortLinkStatsResp struct {
 	// UIP
 	Uip int `json:"uip"`
 	// 小时访问统计
-	HourStats []ShortLinkStatsAccessBaseDTO `json:"hourly"`
+	Hourly []ShortLinkStatsAccessBaseDTO `json:"hourly"`
 	// 日访问统计
 	Daily []ShortLinkStatsAccessBaseDTO `json:"daily"`
 	// 周访问统计

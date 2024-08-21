@@ -1,17 +1,31 @@
 package main
 
-import "fmt"
-
-type Person struct {
-	Name string
-	Age  int
-}
+import (
+	"encoding/json"
+	"fmt"
+	"shortlink/internal/interfaces/rest/dto/resp"
+)
 
 func main() {
-	// Create a new Person struct
-	p := Person{
-		Name: "John",
+
+	var GroupCountList []resp.GroupCountDTO
+	g1 := resp.GroupCountDTO{
+		Gid:            "public",
+		ShortLinkCount: 99,
 	}
-	// Print the struct
-	fmt.Println(p)
+	g2 := resp.GroupCountDTO{
+		Gid:            "test",
+		ShortLinkCount: 11,
+	}
+	GroupCountList = append(GroupCountList, g1, g2)
+
+	r := resp.ShortLinkGroupCountQueryResp(GroupCountList)
+
+	jsonData, err := json.Marshal(r)
+	if err != nil {
+		fmt.Println("Error converting struct to JSON:", err)
+		return
+	}
+
+	fmt.Println(string(jsonData))
 }

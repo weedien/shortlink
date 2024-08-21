@@ -15,6 +15,7 @@ type LinkQueryDTO struct {
 	ValidDateType int
 	ValidDate     time.Time
 	Desc          string
+	CreateTime    time.Time
 	Favicon       string
 	TotalPv       int
 	TotalUv       int

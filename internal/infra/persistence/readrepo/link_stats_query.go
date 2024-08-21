@@ -463,7 +463,7 @@ func (q LinkStatsQuery) GroupLinkStats(ctx context.Context, param query.GroupLin
 // GetLinkStatsAccessRecord 访问单个短链接指定时间内访问记录监控数据
 func (q LinkStatsQuery) GetLinkStatsAccessRecord(
 	ctx context.Context,
-	param query.GetLinkStatsAccessRecordGroup,
+	param query.GetLinkStatsAccessRecord,
 ) (res *types.PageResp[query.LinkStatsAccessRecord], err error) {
 
 	queryParam := dao.LinkQueryParam{

@@ -4,14 +4,19 @@ type SlugError struct {
 	errorCode ErrorCode
 	errorType ErrorType
 	msg       string
+	err       error
 }
 
-func NewServiceError(errorCode ErrorCode) SlugError {
-	return SlugError{
-		errorCode: errorCode,
-		errorType: ServiceError,
-	}
+func (s SlugError) ErrorType() ErrorType {
+	return s.errorType
 }
+
+//func NewServiceError(errorCode ErrorCode) SlugError {
+//	return SlugError{
+//		errorCode: errorCode,
+//		errorType: ServiceError,
+//	}
+//}
 
 func NewServiceErrorWithMsg(errorCode ErrorCode, msg string) SlugError {
 	return SlugError{
@@ -50,6 +55,10 @@ func (s SlugError) Error() string {
 type ErrorType string
 
 var (
+	ErrorTypeIncorrectInput   ErrorType = "incorrect-input"
+	ErrorTypeAuthorization    ErrorType = "authorization"
+	ErrorTypeResourceNotFound ErrorType = "resource-not-found"
+
 	RequestError  ErrorType = "RequestError"
 	ExternalError ErrorType = "ExternalError"
 	ServiceError  ErrorType = "ServiceError"
@@ -61,9 +70,9 @@ type ErrorCode struct {
 }
 
 var (
-	RouteNotFound   = ErrorCode{Code: 10001, Desc: "请求路由不存在"}
-	Unknown         = ErrorCode{Code: 10015, Desc: "未知错误"}
-	TooManyRequests = ErrorCode{Code: 10016, Desc: "单位时间内请求过多，请稍后再试"}
+	//RouteNotFound = ErrorCode{Code: 10001, Desc: "请求路由不存在"}
+	Unknown = ErrorCode{Code: 10015, Desc: "未知错误"}
+	//TooManyRequests = ErrorCode{Code: 10016, Desc: "单位时间内请求过多，请稍后再试"}
 
 	OriginalUrlMisspelled    = ErrorCode{Code: 30001, Desc: "原始链接拼写错误"}
 	InvalidDomain            = ErrorCode{Code: 30002, Desc: "不合法的域名"}

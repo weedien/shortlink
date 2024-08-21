@@ -8,11 +8,11 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	recover2 "github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
-	"shortlink/config"
-	"shortlink/pkg/error_no"
-	"shortlink/pkg/types"
+	"shortlink/common/config"
+	"shortlink/common/error_no"
+	"shortlink/common/httperr"
 )
 
 func SetupMiddlewares(app *fiber.App) {
@@ -23,12 +23,10 @@ func SetupMiddlewares(app *fiber.App) {
 	app.Use(limiter.New(limiter.Config{
 		Max: config.DefaultInt("MAX_REQUESTS", 100),
 		LimitReached: func(c *fiber.Ctx) error {
-			return c.Status(fiber.StatusTooManyRequests).JSON(
-				types.FailWithErrorCode(error_no.TooManyRequests),
-			)
+			return httperr.RespondWithError(c, error_no.TooManyRequests)
 		},
 	}))
 	app.Use(logger.New())
-	app.Use(recover2.New())
+	app.Use(recover.New())
 	app.Use(requestid.New())
 }

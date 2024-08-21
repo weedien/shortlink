@@ -1,5 +1,9 @@
 package req
 
+import (
+	"shortlink/common/types"
+)
+
 // RecycleBinSaveReq 回收站保存请求
 type RecycleBinSaveReq struct {
 	// 分组标识
@@ -26,6 +30,8 @@ type RecycleBinDeleteReq struct {
 
 // RecycleBinPageReq 分页查询回收站请求
 type RecycleBinPageReq struct {
+	// 分页参数
+	types.PageReq
 	// 分组标识
 	GidList []string `json:"gidList" binding:"required"`
 }

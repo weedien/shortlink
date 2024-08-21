@@ -2,6 +2,8 @@ package command
 
 import (
 	"context"
+	"log/slog"
+	"shortlink/common/decorator"
 	"shortlink/common/types"
 	"shortlink/internal/domain/link"
 	"shortlink/internal/domain/link/aggregate"
@@ -10,8 +12,26 @@ import (
 	"time"
 )
 
-type CreateLinkBatchHandler struct {
+type createLinkBatchHandler struct {
 	repo link.Repository
+}
+
+type CreateLinkBatchHandler decorator.CommandHandler[CreateLinkBatch]
+
+func NewCreateLinkBatchHandler(
+	repo link.Repository,
+	logger *slog.Logger,
+	metricsClient metrics.Client,
+) CreateLinkBatchHandler {
+	if repo == nil {
+		panic("nil repo")
+	}
+
+	return decorator.ApplyCommandDecorators[CreateLinkBatch](
+		createLinkBatchHandler{repo: repo},
+		logger,
+		metricsClient,
+	)
 }
 
 type CreateLinkBatch struct {
@@ -27,16 +47,22 @@ type CreateLinkBatch struct {
 	ValidDateType int
 	// 有效期
 	ValidDate time.Time
+	// 执行结果
+	result *valobj.ShortLinkCreateBatchVo
 }
 
-func (h CreateLinkBatchHandler) Handle(
+func (c CreateLinkBatch) ExecutionResult() *valobj.ShortLinkCreateBatchVo {
+	return c.result
+}
+
+func (h createLinkBatchHandler) Handle(
 	ctx context.Context,
 	cmd CreateLinkBatch,
-) (resp *valobj.ShortLinkCreateBatchVo, err error) {
+) error {
 
 	var shortLinkRespList []valobj.ShortLinkCreateVo
 	for idx, v := range cmd.OriginUrls {
-		link, err := types.NewLink(
+		linkEntity, err := types.NewLink(
 			v,
 			cmd.Gid,
 			cmd.CreateType,
@@ -45,26 +71,39 @@ func (h CreateLinkBatchHandler) Handle(
 			cmd.Descriptions[idx],
 		)
 		if err != nil {
-			return
+			return err
 		}
-		linkGoto := entity.NewLinkGoto(cmd.Gid, link.ShortUrl())
-		linkAggregate := aggregate.NewCreateLinkAggregate(link, linkGoto)
+
+		// 生成唯一短链接
+		err = linkEntity.GenUniqueShortUri(10, func(shortUri string) bool {
+			exists, err := h.repo.ShortUriExists(ctx, shortUri)
+			if err != nil {
+				return true
+			}
+			return exists
+		})
+		if err != nil {
+			return err
+		}
+
+		linkGoto := entity.NewLinkGoto(cmd.Gid, linkEntity.FullShortUrl())
+		linkAggregate := aggregate.NewCreateLinkAggregate(linkEntity, linkGoto)
 
 		if err = h.repo.CreateLink(ctx, linkAggregate); err != nil {
-			return
+			return err
 		}
 
 		r := valobj.ShortLinkCreateVo{
-			FullShortUrl: link.ShortUrl(),
+			FullShortUrl: linkEntity.FullShortUrl(),
 			OriginalUrl:  v,
 			Gid:          cmd.Gid,
 		}
 		shortLinkRespList = append(shortLinkRespList, r)
 	}
 
-	resp = &valobj.ShortLinkCreateBatchVo{
-		SuccessCount:          len(shortLinkRespList),
-		ShortLinkCreateVoList: shortLinkRespList,
+	cmd.result = &valobj.ShortLinkCreateBatchVo{
+		SuccessCount: len(shortLinkRespList),
+		LinkInfos:    shortLinkRespList,
 	}
-	return
+	return nil
 }

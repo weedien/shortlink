@@ -4,37 +4,37 @@ import (
 	"fmt"
 	"github.com/gofiber/fiber/v2/log"
 	"os"
-	"shortlink/pkg/toolkit"
+	"shortlink/common/toolkit"
 	"strconv"
 
 	"github.com/joho/godotenv"
 )
 
-type ConfigWithDefault struct {
+type configWithDefault struct {
 	key          string
 	defaultValue string
 }
 
 var (
-	DSN                  = ConfigWithDefault{"DSN", "host=remote user=weedien password=031209 dbname=wespace search_path=link port=5432 sslmode=disable TimeZone=Asia/Shanghai"}
-	RedisAddr            = ConfigWithDefault{"REDIS_ADDR", "localhost:6379"}
-	RedisPassword        = ConfigWithDefault{"REDIS_PASSWORD", ""}
-	RedisDB              = ConfigWithDefault{"REDIS_DB", "0"}
-	EnableSharding       = ConfigWithDefault{"ENABLE_SHARDING", "false"}
-	BaseRoutePrefix      = ConfigWithDefault{"BASE_ROUTE_PREFIX", "/api/short-link/v1"}
-	Port                 = ConfigWithDefault{"PORT", "8080"}
-	ShortLinkDomain      = ConfigWithDefault{"SHORT_LINK_DOMAIN", "http://localhost:8080"}
-	EnableWhiteList      = ConfigWithDefault{"ENABLE_WHITE_LIST", "false"}
-	DomainWhiteList      = ConfigWithDefault{"DOMAIN_WHITE_LIST", ""}
-	DomainWhiteListNames = ConfigWithDefault{"DOMAIN_WHITE_LIST_NAMES", "掘金,知乎,简书,博客园,CSDN,开源中国,SegmentFault,思否,博客,博客园,博客园首页,博客首页,博客园博客"}
-	DefaultFavicon       = ConfigWithDefault{"DEFAULT_FAVICON", "https://cdn.jsdelivr.net/gh/weedien/shortlink@main/static/favicon.ico"}
+	DSN                  = configWithDefault{"DSN", "host=remote user=weedien password=031209 dbname=wespace search_path=link port=5432 sslmode=disable TimeZone=Asia/Shanghai"}
+	RedisAddr            = configWithDefault{"REDIS_ADDR", "localhost:6379"}
+	RedisPassword        = configWithDefault{"REDIS_PASSWORD", ""}
+	RedisDB              = configWithDefault{"REDIS_DB", "0"}
+	EnableSharding       = configWithDefault{"ENABLE_SHARDING", "false"}
+	BaseRoutePrefix      = configWithDefault{"BASE_ROUTE_PREFIX", "/api/short-link/v1"}
+	Port                 = configWithDefault{"PORT", "8080"}
+	ShortLinkDomain      = configWithDefault{"SHORT_LINK_DOMAIN", "http://localhost:8080"}
+	EnableWhiteList      = configWithDefault{"ENABLE_WHITE_LIST", "false"}
+	DomainWhiteList      = configWithDefault{"DOMAIN_WHITE_LIST", ""}
+	DomainWhiteListNames = configWithDefault{"DOMAIN_WHITE_LIST_NAMES", "掘金,知乎,简书,博客园,CSDN,开源中国,SegmentFault,思否,博客,博客园,博客园首页,博客首页,博客园博客"}
+	DefaultFavicon       = configWithDefault{"DEFAULT_FAVICON", "https://cdn.jsdelivr.net/gh/weedien/shortlink@main/static/favicon.ico"}
 )
 
-func (c ConfigWithDefault) String() string {
+func (c configWithDefault) String() string {
 	return Default(c.key, c.defaultValue)
 }
 
-func (c ConfigWithDefault) Int() int {
+func (c configWithDefault) Int() int {
 	value := Default(c.key, c.defaultValue)
 	i, err := strconv.Atoi(value)
 	if err != nil {
@@ -44,7 +44,7 @@ func (c ConfigWithDefault) Int() int {
 	return i
 }
 
-func (c ConfigWithDefault) Bool() bool {
+func (c configWithDefault) Bool() bool {
 	value := Default(c.key, c.defaultValue)
 	b, err := strconv.ParseBool(value)
 	if err != nil {
@@ -54,7 +54,7 @@ func (c ConfigWithDefault) Bool() bool {
 	return b
 }
 
-func (c ConfigWithDefault) Array() []string {
+func (c configWithDefault) Array() []string {
 	value := Default(c.key, c.defaultValue)
 	// split by comma
 	return toolkit.Split(value, ',')

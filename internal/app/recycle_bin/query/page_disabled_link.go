@@ -2,33 +2,43 @@ package query
 
 import (
 	"context"
-	"shortlink/common/consts"
+	"log/slog"
+	"shortlink/common/decorator"
 	"shortlink/common/types"
 )
 
-type PageDisabledLinkHandler struct {
-	readModel PageDisableLinkReadModel
+type pageRecycleBinHandler struct {
+	readModel PageRecycleBinReadModel
 }
 
-type PageRecycleBinParam struct {
+type PageRecycleBinHandler decorator.QueryHandler[PageRecycleBin, *types.PageResp[LinkQueryDTO]]
+
+func NewPageRecycleBinHandler(
+	readModel PageRecycleBinReadModel,
+	logger *slog.Logger,
+	metricsClient metrics.Client,
+) PageRecycleBinHandler {
+	if readModel == nil {
+		panic("nil readModel")
+	}
+
+	return decorator.ApplyQueryDecorators[PageRecycleBin, *types.PageResp[LinkQueryDTO]](
+		pageRecycleBinHandler{readModel},
+		logger,
+		metricsClient,
+	)
+}
+
+type PageRecycleBin struct {
 	types.PageReq
 	GidList      []string `json:"gidList"`
 	EnableStatus int      `json:"enableStatus"`
 }
 
-type PageDisableLinkReadModel interface {
-	PageDisabledLink(ctx context.Context, param PageRecycleBinParam) (*types.PageResp[LinkQueryDTO], error)
+type PageRecycleBinReadModel interface {
+	PageDisabledLink(ctx context.Context, param PageRecycleBin) (*types.PageResp[LinkQueryDTO], error)
 }
 
-func (h PageDisabledLinkHandler) Handle(ctx context.Context, gidList []string, page, size int) (*types.PageResp[LinkQueryDTO], error) {
-	param := PageRecycleBinParam{
-		PageReq: types.PageReq{
-			Current: page,
-			Size:    size,
-		},
-		GidList:      gidList,
-		EnableStatus: consts.StatusDisable,
-	}
-
-	return h.readModel.PageDisabledLink(ctx, param)
+func (h pageRecycleBinHandler) Handle(ctx context.Context, cmd PageRecycleBin) (*types.PageResp[LinkQueryDTO], error) {
+	return h.readModel.PageDisabledLink(ctx, cmd)
 }

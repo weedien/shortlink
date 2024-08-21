@@ -2,16 +2,36 @@ package query
 
 import (
 	"context"
+	"log/slog"
+	"shortlink/common/decorator"
 	"shortlink/common/types"
 	"time"
 )
 
-// GetLinkStatsAccessRecordHandler 获取单个短链接指定时间内访问记录监控数据
-type GetLinkStatsAccessRecordHandler struct {
+// getLinkStatsAccessRecordHandler 获取单个短链接指定时间内访问记录监控数据
+type getLinkStatsAccessRecordHandler struct {
 	readModel GetLinkStatsAccessRecordReadModel
 }
 
-type GetLinkStatsAccessRecordGroup struct {
+type GetLinkStatsAccessRecordHandler decorator.QueryHandler[GetLinkStatsAccessRecord, *types.PageResp[LinkStatsAccessRecord]]
+
+func NewGetLinkStatsAccessRecordHandler(
+	readModel GetLinkStatsAccessRecordReadModel,
+	logger *slog.Logger,
+	metricsClient metrics.Client,
+) GetLinkStatsAccessRecordHandler {
+	if readModel == nil {
+		panic("nil readModel")
+	}
+
+	return decorator.ApplyQueryDecorators[GetLinkStatsAccessRecord, *types.PageResp[LinkStatsAccessRecord]](
+		getLinkStatsAccessRecordHandler{readModel},
+		logger,
+		metricsClient,
+	)
+}
+
+type GetLinkStatsAccessRecord struct {
 	types.PageReq
 	// 完整短链接
 	FullShortUrl string
@@ -27,9 +47,9 @@ type GetLinkStatsAccessRecordGroup struct {
 
 type GetLinkStatsAccessRecordReadModel interface {
 	// GetLinkStatsAccessRecord 获取单个短链接指定时间内访问记录监控数据
-	GetLinkStatsAccessRecord(ctx context.Context, param GetLinkStatsAccessRecordGroup) (*types.PageResp[LinkStatsAccessRecord], error)
+	GetLinkStatsAccessRecord(ctx context.Context, param GetLinkStatsAccessRecord) (*types.PageResp[LinkStatsAccessRecord], error)
 }
 
-func (h GetLinkStatsAccessRecordHandler) Handle(ctx context.Context, query GetLinkStatsAccessRecordGroup) (d *types.PageResp[LinkStatsAccessRecord], err error) {
+func (h getLinkStatsAccessRecordHandler) Handle(ctx context.Context, query GetLinkStatsAccessRecord) (d *types.PageResp[LinkStatsAccessRecord], err error) {
 	return h.readModel.GetLinkStatsAccessRecord(ctx, query)
 }

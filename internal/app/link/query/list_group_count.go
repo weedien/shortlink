@@ -1,15 +1,37 @@
 package query
 
-import "context"
+import (
+	"context"
+	"log/slog"
+	"shortlink/common/decorator"
+)
 
-type ListGroupCountHandler struct {
+type listGroupCountHandler struct {
 	readModel ListGroupCountReadModel
 }
 
-type ListGroupCountReadModel interface {
-	ListGroupShortLinkCount(ctx context.Context, gidList []string) ([]GroupLinkCount, error)
+type ListGroupCountHandler decorator.QueryHandler[[]string, []GroupLinkCount]
+
+func NewListGroupCountHandler(
+	readModel ListGroupCountReadModel,
+	logger *slog.Logger,
+	metrics metrics.Client,
+) ListGroupCountHandler {
+	if readModel == nil {
+		panic("nil readModel")
+	}
+
+	return decorator.ApplyQueryDecorators[[]string, []GroupLinkCount](
+		listGroupCountHandler{readModel: readModel},
+		logger,
+		metrics,
+	)
 }
 
-func (h ListGroupCountHandler) Handle(ctx context.Context, gidList []string) ([]GroupLinkCount, error) {
-	return h.readModel.ListGroupShortLinkCount(ctx, gidList)
+type ListGroupCountReadModel interface {
+	ListGroupLinkCount(ctx context.Context, gidList []string) ([]GroupLinkCount, error)
+}
+
+func (h listGroupCountHandler) Handle(ctx context.Context, gidList []string) ([]GroupLinkCount, error) {
+	return h.readModel.ListGroupLinkCount(ctx, gidList)
 }

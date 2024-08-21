@@ -5,7 +5,7 @@ import (
 	"shortlink/internal/app/recycle_bin/query"
 )
 
-type RecycleBinApplication struct {
+type Application struct {
 	Commands Commands
 	Queries  Queries
 }
@@ -17,5 +17,5 @@ type Commands struct {
 }
 
 type Queries struct {
-	PageDisabledLink query.PageDisabledLinkHandler
+	PageDisabledLink query.PageRecycleBinHandler
 }

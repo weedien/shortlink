@@ -13,7 +13,7 @@ func (s *LinkConverter) LinkModelToQuery() {
 
 }
 
-func (s *LinkConverter) LinkEntityToPo(entity *types.Link) po2.Link {
+func (s *LinkConverter) LinkEntityToPo(entity types.Link) po2.Link {
 	return po2.Link{}
 }
 

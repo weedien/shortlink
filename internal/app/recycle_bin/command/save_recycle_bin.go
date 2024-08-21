@@ -2,15 +2,35 @@ package command
 
 import (
 	"context"
+	"log/slog"
+	"shortlink/common/decorator"
 	"shortlink/common/types"
 	"shortlink/internal/domain/recycle_bin"
 )
 
-type SaveToRecycleBinHandler struct {
+type saveToRecycleBinHandler struct {
 	repo recycle_bin.Repository
 }
 
-func (h SaveToRecycleBinHandler) Handle(ctx context.Context, id types.LinkID) error {
+type SaveToRecycleBinHandler decorator.CommandHandler[types.LinkID]
+
+func NewSaveToRecycleBinHandler(
+	repo recycle_bin.Repository,
+	logger *slog.Logger,
+	metricsClient metrics.Client,
+) SaveToRecycleBinHandler {
+	if repo == nil {
+		panic("nil repo")
+	}
+
+	return decorator.ApplyCommandDecorators[types.LinkID](
+		saveToRecycleBinHandler{repo},
+		logger,
+		metricsClient,
+	)
+}
+
+func (h saveToRecycleBinHandler) Handle(ctx context.Context, id types.LinkID) error {
 	return h.repo.SaveToRecycleBin(
 		ctx,
 		id,

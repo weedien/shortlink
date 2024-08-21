@@ -3,12 +3,16 @@ package toolkit
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/gofiber/fiber/v2"
+	"github.com/mssola/user_agent"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
+// GetTitleByUrl 通过 URL 获取页面标题
 func GetTitleByUrl(rawUrl string) (string, error) {
 	parsedUrl, err := url.Parse(rawUrl)
 	if err != nil {
@@ -34,4 +38,35 @@ func GetTitleByUrl(rawUrl string) (string, error) {
 		return doc.Find("title").Text(), nil
 	}
 	return "Error while fetching title.", nil
+}
+
+// GetRequestInfo 获取请求中的操作系统、浏览器、设备类型（PC/Mobile）、网络类型（WIFI/4G/5G）
+func GetRequestInfo(c *fiber.Ctx) (string, string, string, string) {
+	ua := user_agent.New(c.Get("User-Agent"))
+
+	// 获取操作系统和浏览器信息
+	os := ua.OS()
+	name, version := ua.Browser()
+
+	// 获取设备类型
+	var deviceType string
+	if ua.Mobile() {
+		deviceType = "Mobile"
+	} else {
+		deviceType = "PC"
+	}
+
+	// 获取网络类型
+	ip := c.IP()
+	networkType := getNetworkType(ip)
+
+	return os, fmt.Sprintf("%s %s", name, version), deviceType, networkType
+}
+
+// getNetworkType 根据IP地址获取网络类型
+func getNetworkType(ip string) string {
+	if strings.HasPrefix(ip, "192.168.") || strings.HasPrefix(ip, "10.") {
+		return "WIFI"
+	}
+	return "Mobile"
 }

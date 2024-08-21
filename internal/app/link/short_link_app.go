@@ -13,11 +13,11 @@ type Application struct {
 type Commands struct {
 	CreateLink      command.CreateLinkHandler
 	CreateLinkBatch command.CreateLinkBatchHandler
-	GetOriginalUrl  command.GetOriginUrlHandler
 	UpdateLink      command.UpdateLinkHandler
 }
 
 type Queries struct {
 	PageLink       query.PageLinkHandler
 	ListGroupCount query.ListGroupCountHandler
+	GetOriginalUrl query.GetOriginalUrlHandler
 }

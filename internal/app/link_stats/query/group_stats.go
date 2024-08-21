@@ -2,11 +2,31 @@ package query
 
 import (
 	"context"
+	"log/slog"
+	"shortlink/common/decorator"
 	"time"
 )
 
-type GroupLinkStatsHandler struct {
+type groupLinkStatsHandler struct {
 	readModel GroupLinkStatsReadModel
+}
+
+type GroupLinkStatsHandler decorator.QueryHandler[GroupLinkStats, *LinkStats]
+
+func NewGroupLinkStatsHandler(
+	readModel GroupLinkStatsReadModel,
+	logger *slog.Logger,
+	metricsClient metrics.Client,
+) GroupLinkStatsHandler {
+	if readModel == nil {
+		panic("nil readModel")
+	}
+
+	return decorator.ApplyQueryDecorators[GroupLinkStats, *LinkStats](
+		groupLinkStatsHandler{readModel},
+		logger,
+		metricsClient,
+	)
 }
 
 type GroupLinkStats struct {
@@ -23,6 +43,6 @@ type GroupLinkStatsReadModel interface {
 	GroupLinkStats(ctx context.Context, param GroupLinkStats) (*LinkStats, error)
 }
 
-func (h GroupLinkStatsHandler) Handle(ctx context.Context, q GroupLinkStats) (*LinkStats, error) {
+func (h groupLinkStatsHandler) Handle(ctx context.Context, q GroupLinkStats) (*LinkStats, error) {
 	return h.readModel.GroupLinkStats(ctx, q)
 }

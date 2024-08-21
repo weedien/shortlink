@@ -3,9 +3,9 @@ package types
 import (
 	"errors"
 	"github.com/google/uuid"
+	"shortlink/common/config"
 	"shortlink/common/consts"
 	"shortlink/common/toolkit"
-	"shortlink/config"
 	"time"
 )
 
@@ -47,11 +47,20 @@ func NewLink(
 	validDate time.Time,
 	desc string,
 ) (link Link, err error) {
+	// 白名单校验
+	err = verifyWhiteList(originalUrl)
+	if err != nil {
+		return
+	}
+
+	// 有效期需要大于当前时间
+	if validDate.Before(time.Now()) {
+		err = errors.New("有效期不能小于当前时间")
+		return
+	}
 
 	domain := config.ShortLinkDomain.String()
 	favicon := toolkit.GetFaviconWithDefault(originalUrl, config.DefaultFavicon.String())
-
-	// TODO 校验validDate是否有效
 
 	link = Link{
 		originalUrl:   originalUrl,
@@ -65,16 +74,10 @@ func NewLink(
 		enableStatus:  consts.StatusEnable,
 	}
 
-	// 白名单校验
-	err = link.VerifyWhiteList(originalUrl)
-
-	// 生成短链接
-	link.generateShortUrl()
-
 	return
 }
 
-func (l Link) VerifyWhiteList(originUrl string) error {
+func verifyWhiteList(originUrl string) error {
 	if !config.EnableWhiteList.Bool() {
 		return nil
 	}
@@ -98,11 +101,23 @@ func (l Link) Disable() {
 	l.enableStatus = consts.StatusDisable
 }
 
-func (l Link) ShortUrl() string {
+func (l Link) FullShortUrl() string {
 	return l.fullShortUrl
 }
 
-func (l Link) generateShortUrl() {
+// GenUniqueShortUri 生成唯一短链接
+func (l Link) GenUniqueShortUri(attempts int, ifExistsFunc func(string) bool) error {
+	for i := 0; i < attempts; i++ {
+		shortUri := toolkit.HashToBase62(l.originalUrl)
+		if !ifExistsFunc(shortUri) {
+			l.shortUri = "https://" + l.domain + "/" + shortUri
+			return nil
+		}
+	}
+	return errors.New("多次尝试生成唯一短链接失败")
+}
+
+func (l Link) genShortUrl() {
 	originalUrl := l.originalUrl
 	originalUrl += uuid.New().String()
 	l.fullShortUrl = "https://" + l.domain + "/" + toolkit.HashToBase62(originalUrl)

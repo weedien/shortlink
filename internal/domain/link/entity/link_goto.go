@@ -1,14 +1,14 @@
 package entity
 
 type LinkGoto struct {
-	Id           int64
-	Gid          string
-	FullShortUrl string
+	id           int64
+	gid          string
+	fullShortUrl string
 }
 
 func NewLinkGoto(gid, fullShortUrl string) LinkGoto {
 	return LinkGoto{
-		Gid:          gid,
-		FullShortUrl: fullShortUrl,
+		gid:          gid,
+		fullShortUrl: fullShortUrl,
 	}
 }

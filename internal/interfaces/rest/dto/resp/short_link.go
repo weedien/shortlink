@@ -1,15 +1,18 @@
 package resp
 
-import "time"
+import (
+	"shortlink/common/types"
+	"time"
+)
 
 // ShortLinkCreateResp 短链接创建响应
 type ShortLinkCreateResp struct {
 	// 分组标识
 	Gid string `json:"gid"`
 	// 原始链接
-	OriginUrl string `json:"originUrl"`
+	OriginalUrl string `json:"originalUrl"`
 	// 短链接
-	ShortUrl string `json:"shortUrl"`
+	FullShortUrl string `json:"fullShortUrl"`
 }
 
 // ShortLinkBatchCreateResp 短链接批量创建响应
@@ -17,11 +20,13 @@ type ShortLinkBatchCreateResp struct {
 	// 成功数量
 	SuccessCount int `json:"successCount"`
 	// 批量创建返回参数
-	LinkBaseInfos []ShortLinkBaseInfoDTO `json:"linkBaseInfos"`
+	LinkInfos []ShortLinkBaseInfoDTO `json:"linkInfos"`
 }
 
 // ShortLinkGroupCountQueryResp 短链接分组数量查询响应
-type ShortLinkGroupCountQueryResp struct {
+type ShortLinkGroupCountQueryResp []GroupCountDTO
+
+type GroupCountDTO struct {
 	// 分组标识
 	Gid string `json:"gid"`
 	// 短链接数量
@@ -39,7 +44,7 @@ type ShortLinkPageResp struct {
 	// 完整短链接
 	FullShortUrl string `json:"fullShortUrl"`
 	// 原始链接
-	OriginUrl string `json:"originUrl"`
+	OriginalUrl string `json:"originalUrl"`
 	// 分组标识
 	Gid string `json:"gid"`
 	// 有效期类型 0：永久有效 1：自定义
@@ -69,9 +74,11 @@ type ShortLinkPageResp struct {
 }
 
 // ShortLinkStatsAccessRecordResp 短链接监控访问统计记录响应
-type ShortLinkStatsAccessRecordResp struct {
+type ShortLinkStatsAccessRecordResp types.PageResp[ShortLinkStatsAccessRecordDTO]
+
+type ShortLinkStatsAccessRecordDTO struct {
 	// 访客类型
-	VisitorType string `json:"visitorType"`
+	UvType string `json:"UvType"`
 	// 浏览器
 	Browser string `json:"browser"`
 	// 操作系统
@@ -92,10 +99,8 @@ type ShortLinkStatsAccessRecordResp struct {
 
 // ShortLinkBaseInfoDTO 短链接基本信息响应
 type ShortLinkBaseInfoDTO struct {
-	// 描述信息
-	Description string `json:"description"`
 	// 原始链接
-	OriginUrl string `json:"originUrl"`
+	OriginalUrl string `json:"originalUrl"`
 	// 短链接
-	ShortUrl string `json:"shortUrl"`
+	FullShortUrl string `json:"fullShortUrl"`
 }

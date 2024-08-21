@@ -8,9 +8,11 @@ import (
 )
 
 type Repository interface {
+	ShortUriExists(ctx context.Context, shortUrl string) (bool, error)
+
 	CreateLink(ctx context.Context, aggregate aggregate.CreateLinkAggregate) error
 
-	CreateLinkWithLock(ctx context.Context, aggregate aggregate.CreateLinkAggregate) error
+	//CreateLinkWithLock(ctx context.Context, aggregate aggregate.CreateLinkAggregate) error
 
 	UpdateLink(
 		ctx context.Context,
@@ -22,6 +24,8 @@ type Repository interface {
 	GetOriginalUrlByShortUrl(
 		ctx context.Context,
 		fullShortUrl string,
-		statsInfo valobj.ShortLinkStatsRecordVO,
+		statsInfo valobj.ShortLinkStatsRecordVo,
 	) (string, error)
+
+	//RecordLinkVisitInfo(ctx context.Context, info valobj.ShortLinkStatsRecordVo) error
 }

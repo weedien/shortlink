@@ -71,7 +71,7 @@ func TestInitSharding(t *testing.T) {
 //		t.Logf("group: %v", group)
 //	}
 func TestSharding(t *testing.T) {
-	ConnectToDatabase()
+	DB := ConnectToDatabase()
 	err := DB.Create(&po.User{
 		Username: "admin", Password: "admin123456",
 		RealName: "admin", Phone: "yKZz0xLyjNb9LSCOCfJD4w==", Mail: "02/9oF/nWTBK0cM8UPtCOw==",

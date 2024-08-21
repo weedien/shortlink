@@ -1,6 +1,8 @@
 package types
 
-import "shortlink/pkg/error_no"
+import (
+	"shortlink/common/error_no"
+)
 
 const SuccessCode = 10000
 

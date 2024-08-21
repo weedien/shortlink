@@ -4,19 +4,18 @@ import (
 	"fmt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"shortlink/config"
+	"shortlink/common/config"
 )
 
-var DB *gorm.DB
-
-func ConnectToDatabase() {
+func ConnectToDatabase() *gorm.DB {
 	dsn := config.Default("DSN", config.DSN.String())
-	DB, err := gorm.Open(postgres.New(postgres.Config{DSN: dsn}), &gorm.Config{})
+	db, err := gorm.Open(postgres.New(postgres.Config{DSN: dsn}), &gorm.Config{})
 	if err != nil {
 		panic(fmt.Errorf("failed to connect database: %v", err))
 	}
 	// Setup sharding
 	if config.DefaultBool("ENABLE_SHARDING", config.EnableSharding.Bool()) {
-		SetupSharding(DB)
+		setupSharding(db)
 	}
+	return db
 }
