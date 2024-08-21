@@ -6,21 +6,27 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
+	"golang.org/x/exp/slog"
 	"log"
-	"log/slog"
 	"os"
 	"os/signal"
-	"shortlink/common/config"
-	"shortlink/common/error_no"
-	"shortlink/common/httperr"
-	"shortlink/common/logging"
-	"shortlink/internal/infra/cache"
-	"shortlink/internal/infra/lock"
-	"shortlink/internal/infra/mq"
-	"shortlink/internal/infra/persistence/database"
-	"shortlink/internal/interfaces/middleware"
-	"shortlink/internal/interfaces/rest"
-	"shortlink/internal/service"
+	"shortlink/internal/common/cache"
+	"shortlink/internal/common/config"
+	"shortlink/internal/common/error_no"
+	"shortlink/internal/common/lock"
+	"shortlink/internal/common/logging"
+	"shortlink/internal/common/mq"
+	"shortlink/internal/common/persistence/database"
+	"shortlink/internal/common/server"
+	"shortlink/internal/common/server/httperr"
+	"shortlink/internal/common/server/middleware"
+	linkservice "shortlink/internal/link/service"
+	linktrigger "shortlink/internal/link/trigger"
+	linkstatsservice "shortlink/internal/link_stats/service"
+	linkstatstrigger "shortlink/internal/link_stats/trigger"
+	recyclebinservice "shortlink/internal/recycle_bin/service"
+	recyclebintrigger "shortlink/internal/recycle_bin/trigger"
+
 	"syscall"
 )
 
@@ -46,16 +52,16 @@ func main() {
 	middleware.SetupMiddlewares(f)
 
 	// 创建应用服务
-	shortLinkApp := service.NewShortLinkApplication(db, rdb, locker, eventBus)
-	RecycleBinApp := service.NewShortLinkRecycleBinApplication(db, rdb)
-	shortLinkStatsApp := service.NewShortLinkStatsApplication(db)
+	shortLinkApp := linkservice.NewShortLinkApplication(db, rdb, locker, eventBus)
+	RecycleBinApp := recyclebinservice.NewShortLinkRecycleBinApplication(db, rdb)
+	shortLinkStatsApp := linkstatsservice.NewShortLinkStatsApplication(db)
 
 	// 注册路由
 	router := f.Group(config.BaseRoutePrefix.String())
-	rest.NewUriTitleApi(router)
-	rest.NewShortLinkApi(shortLinkApp, router)
-	rest.NewShortLinkStatsApi(shortLinkStatsApp, router)
-	rest.NewShortLinkRecycleBinApi(RecycleBinApp, router)
+	server.NewUriTitleApi(router)
+	linktrigger.NewShortLinkApi(shortLinkApp, router)
+	linkstatstrigger.NewShortLinkStatsApi(shortLinkStatsApp, router)
+	recyclebintrigger.NewShortLinkRecycleBinApi(RecycleBinApp, router)
 
 	// 处理未找到的路由
 	f.All("*", func(c *fiber.Ctx) error {

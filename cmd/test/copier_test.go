@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/jinzhu/copier"
-	"shortlink/common/types"
+	"shortlink/internal/common/types"
 	"testing"
 )
 

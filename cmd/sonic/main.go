@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/bytedance/sonic"
 	"reflect"
-	"shortlink/common/base_event"
-	"shortlink/internal/app/link/event"
-	"shortlink/internal/domain/link/valobj"
+	"shortlink/internal/common/base_event"
+	"shortlink/internal/link/app/event"
+	"shortlink/internal/link/domain/valobj"
 	"time"
 )
 
