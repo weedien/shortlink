@@ -6,19 +6,13 @@ import (
 	"gorm.io/gorm"
 )
 
-// Dynamic SQL
-type Querier interface {
-	// SELECT * FROM @@table WHERE name = @name{{if role !=""}} AND role = @role{{end}}
-	FilterWithNameAndRole(name, role string) ([]gen.T, error)
-}
-
 func main() {
 	g := gen.NewGenerator(gen.Config{
 		OutPath: "../query",
 		Mode:    gen.WithoutContext | gen.WithDefaultQuery | gen.WithQueryInterface, // generate mode
 	})
 
-	dsn := "host=remote user=weedien password=031209 dbname=wespace search_path=link port=5432 sslmode=disable TimeZone=Asia/Shanghai"
+	dsn := "host=remote user=weedien password=031209 dbname=wespace search_path=link_single port=5432 sslmode=disable TimeZone=Asia/Shanghai"
 	gormdb, _ := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	g.UseDB(gormdb) // reuse your gorm db
 

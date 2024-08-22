@@ -7,10 +7,11 @@ import (
 	"shortlink/internal/common/base_event"
 	"shortlink/internal/common/lock"
 	"shortlink/internal/common/metrics"
+	"shortlink/internal/link/adapter"
+	"shortlink/internal/link/adapter/readrepo"
 	"shortlink/internal/link/app"
 	"shortlink/internal/link/app/command"
 	"shortlink/internal/link/app/query"
-	"shortlink/internal/link/repo/readrepo"
 )
 
 func NewShortLinkApplication(
@@ -22,7 +23,7 @@ func NewShortLinkApplication(
 
 	logger := slog.Default()
 	metricsClient := metrics.NoOp{}
-	repository := adapters.NewLinkRepository(db, rdb, locker)
+	repository := adapter.NewLinkRepository(db, rdb, locker)
 	readModel := readrepo.NewLinkQuery(db)
 
 	// 可以理解为一个 CQRS 的总线

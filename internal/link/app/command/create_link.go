@@ -8,7 +8,6 @@ import (
 	"shortlink/internal/common/decorator"
 	"shortlink/internal/common/lock"
 	"shortlink/internal/common/metrics"
-	"shortlink/internal/common/types"
 	"shortlink/internal/link/domain"
 	"shortlink/internal/link/domain/aggregate"
 	"shortlink/internal/link/domain/entity"
@@ -17,7 +16,7 @@ import (
 )
 
 type createLinkHandler struct {
-	repo   domain.Repository
+	repo   domain.LinkRepository
 	locker lock.DistributedLock
 }
 
@@ -47,7 +46,7 @@ func (c CreateLink) ExecutionResult() *valobj.ShortLinkCreateVo {
 type CreateLinkHandler decorator.CommandHandler[CreateLink]
 
 func NewCreateLinkHandler(
-	repo domain.Repository,
+	repo domain.LinkRepository,
 	locker lock.DistributedLock,
 	logger *slog.Logger,
 	metrics metrics.Client,
@@ -85,7 +84,7 @@ func (h createLinkHandler) Handle(
 	}
 
 	// 创建短链接实体
-	linkEntity, err := types.NewLink(
+	linkEntity, err := entity.NewLink(
 		cmd.OriginalUrl,
 		cmd.Gid,
 		cmd.CreateType,

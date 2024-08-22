@@ -129,12 +129,12 @@ func GetFaviconWithDefault(url string, defaultValue string) string {
 func GetFavicon(rawUrl string) (string, error) {
 	parsedUrl, err := url.Parse(rawUrl)
 	if err != nil {
-		return "", fmt.Errorf("invalid URL: %v", err)
+		return "", fmt.Errorf("invalid Url: %v", err)
 	}
 
 	resp, err := http.Get(parsedUrl.String())
 	if err != nil {
-		return "", fmt.Errorf("error while fetching URL: %v", err)
+		return "", fmt.Errorf("error while fetching Url: %v", err)
 	}
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()

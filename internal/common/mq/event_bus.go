@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"reflect"
 	"shortlink/internal/common/base_event"
-	"shortlink/internal/common/idem"
+	"shortlink/internal/common/idempotency"
 	"sync"
 )
 
@@ -17,7 +17,7 @@ type RocketMqBasedEventBus struct {
 	typeRegistry map[string]reflect.Type
 	producer     rmqclient.Producer
 	consumer     rmqclient.SimpleConsumer
-	idemHandler  idem.MessageQueueIdempotencyHandler
+	idemHandler  idempotency.MessageQueueIdempotencyHandler
 	stopFn       func()
 }
 

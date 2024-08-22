@@ -6,21 +6,21 @@ database:
   db: 'postgres'
   # enter the required data table or leave it blank.You can input : orders,users,goods
   tables:
-    - user
-    - group
-    - link
-    - link_goto
-    - group_unique
-    - link_access_logs
-    - link_access_stats
-    - link_browser_stats
-    - link_device_stats
-    - link_locale_stats
-    - link_network_stats
-    - link_os_stats
-    - link_stats_today
+    - t_user
+    - t_group
+    - t_link
+    - t_link_goto
+    - t_group_unique
+    - t_link_access_logs
+    - t_link_access_stats
+    - t_link_browser_stats
+    - t_link_device_stats
+    - t_link_locale_stats
+    - t_link_network_stats
+    - t_link_os_stats
+    - t_link_stats_today
   # specify a directory for output
-  outPath: './internal/infra/persistence/dao/query'
+  outPath: './internal/common/persistence/dao/'
   # query code file name, default: gen.go
   outFile: ''
   # generate unit test for query code

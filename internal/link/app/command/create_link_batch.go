@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"shortlink/internal/common/decorator"
 	"shortlink/internal/common/metrics"
-	"shortlink/internal/common/types"
 	"shortlink/internal/link/domain"
 	"shortlink/internal/link/domain/aggregate"
 	"shortlink/internal/link/domain/entity"
@@ -14,13 +13,13 @@ import (
 )
 
 type createLinkBatchHandler struct {
-	repo domain.Repository
+	repo domain.LinkRepository
 }
 
 type CreateLinkBatchHandler decorator.CommandHandler[CreateLinkBatch]
 
 func NewCreateLinkBatchHandler(
-	repo domain.Repository,
+	repo domain.LinkRepository,
 	logger *slog.Logger,
 	metricsClient metrics.Client,
 ) CreateLinkBatchHandler {
@@ -63,7 +62,7 @@ func (h createLinkBatchHandler) Handle(
 
 	var shortLinkRespList []valobj.ShortLinkCreateVo
 	for idx, v := range cmd.OriginUrls {
-		linkEntity, err := types.NewLink(
+		linkEntity, err := entity.NewLink(
 			v,
 			cmd.Gid,
 			cmd.CreateType,

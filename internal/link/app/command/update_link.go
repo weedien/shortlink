@@ -6,19 +6,19 @@ import (
 	"shortlink/internal/common/constant"
 	"shortlink/internal/common/decorator"
 	"shortlink/internal/common/metrics"
-	"shortlink/internal/common/types"
 	"shortlink/internal/link/domain"
+	"shortlink/internal/link/domain/entity"
 	"time"
 )
 
 type updateLinkHandler struct {
-	repo domain.Repository
+	repo domain.LinkRepository
 }
 
 type UpdateLinkHandler decorator.CommandHandler[UpdateLink]
 
 func NewUpdateLinkHandler(
-	repo domain.Repository,
+	repo domain.LinkRepository,
 	logger *slog.Logger,
 	metricsClient metrics.Client,
 ) UpdateLinkHandler {
@@ -53,12 +53,12 @@ type UpdateLink struct {
 func (h updateLinkHandler) Handle(ctx context.Context, cmd UpdateLink) (err error) {
 	return h.repo.UpdateLink(
 		ctx,
-		types.LinkID{
+		entity.LinkID{
 			FullShortUrl: cmd.FullShortUrl,
 			Gid:          cmd.OriginalGid,
 		},
 		constant.StatusEnable,
-		func(ctx context.Context, link *types.Link) (*types.Link, error) {
+		func(ctx context.Context, link *entity.Link) (*entity.Link, error) {
 			link.SetGid(cmd.Gid).SetOriginalUrl(cmd.OriginalUrl).
 				SetDesc(cmd.Description).SetValidDateType(cmd.ValidDateType).
 				SetValidDate(cmd.ValidDate)

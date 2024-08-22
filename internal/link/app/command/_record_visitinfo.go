@@ -10,13 +10,13 @@ import (
 )
 
 type recordLinkVisitInfoHandler struct {
-	repo domain.Repository
+	repo domain.LinkRepository
 }
 
 type RecordLinkVisitInfoHandler decorator.CommandHandler[RecordLinkVisitInfo]
 
 func NewRecordLinkVisitInfoHandler(
-	repo domain.Repository,
+	repo domain.LinkRepository,
 	logger *slog.Logger,
 	metricsClient metrics.Client,
 ) RecordLinkVisitInfoHandler {
