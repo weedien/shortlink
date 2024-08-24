@@ -14,6 +14,8 @@ var (
 
 	RouteNotFound   = errors.New("route not found")
 	TooManyRequests = errors.New("too many requests")
+
+	UserNotExist = errors.New("user not exist")
 )
 
 func NewServiceError(err error) SlugError {
