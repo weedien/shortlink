@@ -3,18 +3,18 @@ package query
 import (
 	"context"
 	"shortlink/internal/common/error_no"
-	"shortlink/internal/user/domain"
+	"shortlink/internal/user/domain/user"
 )
 
 type GetUserHandler struct {
-	repo domain.UserRepository
+	repo user.Repository
 }
 
-func NewGetUserHandler(repo domain.UserRepository) *GetUserHandler {
+func NewGetUserHandler(repo user.Repository) *GetUserHandler {
 	return &GetUserHandler{repo: repo}
 }
 
-func (h GetUserHandler) Handle(ctx context.Context, username string) (res *domain.User, err error) {
+func (h GetUserHandler) Handle(ctx context.Context, username string) (res *user.User, err error) {
 	if res, err = h.repo.GetUser(ctx, username); err != nil {
 		return
 	}

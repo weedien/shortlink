@@ -1,7 +1,18 @@
 package query
 
-import "shortlink/internal/user/domain"
+import (
+	"context"
+	"shortlink/internal/user/domain/user"
+)
 
 type CheckUserExistHandler struct {
-	repo domain.UserRepository
+	repo user.Repository
+}
+
+func NewCheckUserExistHandler(repo user.Repository) *CheckUserExistHandler {
+	return &CheckUserExistHandler{repo: repo}
+}
+
+func (h CheckUserExistHandler) Handle(ctx context.Context, username string) (bool, error) {
+	return h.repo.CheckUserExist(ctx, username)
 }
