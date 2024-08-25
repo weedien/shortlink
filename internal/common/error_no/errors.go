@@ -15,7 +15,10 @@ var (
 	RouteNotFound   = errors.New("route not found")
 	TooManyRequests = errors.New("too many requests")
 
-	UserNotExist = errors.New("user not exist")
+	UserNotExist                    = errors.New("user not exist")
+	UserExist                       = errors.New("user exist")
+	UserForbidden                   = errors.New("user forbidden")
+	InvalidTokenOrUnloggedLoginUser = errors.New("invalid token or unlogged user")
 )
 
 func NewServiceError(err error) SlugError {

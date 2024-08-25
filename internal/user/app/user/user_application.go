@@ -1,12 +1,25 @@
 package user
 
-type UserApplication struct {
-	Commands UserCommands
-	Queries  UserQueries
+import (
+	"shortlink/internal/user/app/user/command"
+	"shortlink/internal/user/app/user/query"
+)
+
+type Application struct {
+	Commands Commands
+	Queries  Queries
 }
 
-type UserCommands struct {
+type Commands struct {
+	UserRegister command.UserRegisterHandler
+	UserLogin    command.UserLoginHandler
+	UserLogout   command.UserLogoutHandler
+	UpdateUser   command.UpdateUserHandler
+	DeleteUser   command.DeleteUserHandler
 }
 
-type UserQueries struct {
+type Queries struct {
+	GetUser        query.GetUserHandler
+	CheckLogin     query.CheckLoginHandler
+	CheckUserExist query.CheckUserExistHandler
 }
