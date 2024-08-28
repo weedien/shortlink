@@ -12,14 +12,14 @@ import (
 
 type getOriginalUrlHandler struct {
 	readModel GetOriginalUrlReadModel
-	eventBus  base_event.AppEventBus
+	eventBus  base_event.EventBus
 }
 
 type GetOriginalUrlHandler decorator.QueryHandler[GetOriginalUrl, string]
 
 func NewGetOriginalUrlHandler(
 	readModel GetOriginalUrlReadModel,
-	eventBus base_event.AppEventBus,
+	eventBus base_event.EventBus,
 	logger *slog.Logger,
 	metrics metrics.Client,
 ) GetOriginalUrlHandler {

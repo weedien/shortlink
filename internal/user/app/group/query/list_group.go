@@ -18,15 +18,15 @@ type GroupDto struct {
 }
 
 type ListGroupReadModel interface {
-	ListGroup(ctx context.Context) ([]group.Group, error)
+	ListGroup(ctx context.Context, username string) ([]group.Group, error)
 }
 
-func NewListGroupHandler(readModel ListGroupReadModel) ListGroupHandler {
-	return ListGroupHandler{readModel: readModel}
+func NewListGroupHandler(readModel ListGroupReadModel, shortLinkService ShortLinkService) ListGroupHandler {
+	return ListGroupHandler{readModel: readModel, shortLinkService: shortLinkService}
 }
 
-func (h ListGroupHandler) Handle(ctx context.Context) (res []GroupDto, err error) {
-	groups, err := h.readModel.ListGroup(ctx)
+func (h ListGroupHandler) Handle(ctx context.Context, username string) (res []GroupDto, err error) {
+	groups, err := h.readModel.ListGroup(ctx, username)
 	if err != nil {
 		return nil, err
 	}

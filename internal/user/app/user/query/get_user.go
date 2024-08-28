@@ -10,8 +10,8 @@ type GetUserHandler struct {
 	repo user.Repository
 }
 
-func NewGetUserHandler(repo user.Repository) *GetUserHandler {
-	return &GetUserHandler{repo: repo}
+func NewGetUserHandler(repo user.Repository) GetUserHandler {
+	return GetUserHandler{repo: repo}
 }
 
 func (h GetUserHandler) Handle(ctx context.Context, username string) (res *user.User, err error) {

@@ -18,12 +18,19 @@ type UpdateUserHandler struct {
 	repo user.Repository
 }
 
+func NewUpdateUserHandler(repo user.Repository) UpdateUserHandler {
+	if repo == nil {
+		panic("nil repo")
+	}
+	return UpdateUserHandler{repo: repo}
+}
+
 func (h UpdateUserHandler) Handle(ctx context.Context, cmd UpdateUserCommand) error {
 	currentUsername := ctx.Value("username").(string)
 	if currentUsername != cmd.Username {
 		return error_no.UserForbidden
 	}
 
-	user := user.NewUser(cmd.Username, cmd.Password, cmd.RealName, cmd.Email, cmd.Phone)
-	return h.repo.UpdateUser(ctx, &user)
+	u := user.NewUser(cmd.Username, cmd.Password, cmd.RealName, cmd.Email, cmd.Phone)
+	return h.repo.UpdateUser(ctx, &u)
 }

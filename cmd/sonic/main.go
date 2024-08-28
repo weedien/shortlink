@@ -38,5 +38,5 @@ func main() {
 	if err = sonic.Unmarshal(marshal, eventPtr); err != nil {
 		fmt.Printf("反序列化失败: %v\n", err)
 	}
-	fmt.Printf("反序列化后的消息: %#v\n", eventPtr.(base_event.AppEvent).(*event.RecordLinkVisitEvent))
+	fmt.Printf("反序列化后的消息: %#v\n", eventPtr.(base_event.Event).(*event.RecordLinkVisitEvent))
 }

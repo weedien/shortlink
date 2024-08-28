@@ -16,6 +16,25 @@ type GroupRepository struct {
 	rdb *redis.Client
 }
 
+func NewGroupRepositoryImpl(db *gorm.DB) GroupRepository {
+	return GroupRepository{db: db}
+}
+
+func (r GroupRepository) ListGroup(ctx context.Context, username string) ([]group.Group, error) {
+	var groupPos []po.Group
+	if err := r.db.WithContext(ctx).
+		Where("username = ?", username).
+		Order("sort_order").
+		Find(&groupPos).Error; err != nil {
+		return nil, err
+	}
+	groups := make([]group.Group, 0, len(groupPos))
+	for _, groupPo := range groupPos {
+		groups = append(groups, group.NewGroup(groupPo.Gid, groupPo.Username, groupPo.Name, groupPo.SortOrder))
+	}
+	return groups, nil
+}
+
 func (r GroupRepository) CreateGroup(ctx context.Context, g group.Group) error {
 	groupPo := po.Group{
 		Gid:       g.Gid(),

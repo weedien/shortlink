@@ -15,7 +15,7 @@ func NewRecordLinkVisitListener(repo domain.Repository) RecordLinkVisitListener 
 	return RecordLinkVisitListener{repo: repo}
 }
 
-func (h RecordLinkVisitListener) Process(ctx context.Context, e base_event.AppEvent) error {
+func (h RecordLinkVisitListener) Process(ctx context.Context, e base_event.Event) error {
 	if ve, ok := e.(event.RecordLinkVisitEvent); ok {
 		return h.repo.SaveLinkStats(ctx, ve.RecordInfo)
 	}

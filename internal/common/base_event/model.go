@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type AppEvent interface {
+type Event interface {
 	Name() string
 	OccurredAt() time.Time
 }

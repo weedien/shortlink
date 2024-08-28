@@ -10,6 +10,7 @@ type UpdateGroupCommand struct {
 	Name string
 }
 
+// UpdateGroupHandler 只能修改组名
 type UpdateGroupHandler struct {
 	repo group.Repository
 }

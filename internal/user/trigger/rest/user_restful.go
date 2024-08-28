@@ -1,4 +1,4 @@
-package http
+package rest
 
 import (
 	"github.com/gofiber/fiber/v2"
@@ -6,8 +6,8 @@ import (
 	"shortlink/internal/user/app/user"
 	"shortlink/internal/user/app/user/command"
 	"shortlink/internal/user/app/user/query"
-	"shortlink/internal/user/trigger/http/dto/req"
-	"shortlink/internal/user/trigger/http/dto/resp"
+	"shortlink/internal/user/trigger/rest/dto/req"
+	"shortlink/internal/user/trigger/rest/dto/resp"
 )
 
 type UserApi struct {
@@ -31,7 +31,7 @@ func NewUserApi(app user.Application, router fiber.Router) {
 
 // GetUserByUsername 根据用户名查询用户信息
 func (h UserApi) GetUserByUsername(c *fiber.Ctx) error {
-	username := c.Params("username")
+	username := c.Locals("username").(string)
 	response := resp.UserResp{}
 	res, err := h.app.Queries.GetUser.Handle(c.Context(), username)
 	if err != nil {
@@ -45,7 +45,7 @@ func (h UserApi) GetUserByUsername(c *fiber.Ctx) error {
 
 // GetUserByUsernameWithoutMask 根据用户名查询无脱敏用户信息
 func (h UserApi) GetUserByUsernameWithoutMask(c *fiber.Ctx) error {
-	username := c.Params("username")
+	username := c.Locals("username").(string)
 	response := resp.UserActualResp{}
 	res, err := h.app.Queries.GetUser.Handle(c.Context(), username)
 	if err != nil {
@@ -59,7 +59,7 @@ func (h UserApi) GetUserByUsernameWithoutMask(c *fiber.Ctx) error {
 
 // CheckUserExist 查询用户是否存在
 func (h UserApi) CheckUserExist(c *fiber.Ctx) error {
-	username := c.Query("username")
+	username := c.Locals("username").(string)
 	exist, err := h.app.Queries.CheckUserExist.Handle(c.Context(), username)
 	if err != nil {
 		return err
@@ -114,12 +114,16 @@ func (h UserApi) Login(c *fiber.Ctx) error {
 		return err
 	}
 	response.Token = cmd.ExecutionResult()
+	c.Cookie(&fiber.Cookie{
+		Name:  "token",
+		Value: response.Token,
+	})
 	return c.JSON(response)
 }
 
 // CheckLogin 检查用户是否登录
 func (h UserApi) CheckLogin(c *fiber.Ctx) error {
-	username := c.Query("username")
+	username := c.Locals("username").(string)
 	token := c.Query("token")
 	q := query.CheckLogin{
 		Username: username,
@@ -134,7 +138,7 @@ func (h UserApi) CheckLogin(c *fiber.Ctx) error {
 
 // Logout 用户登出
 func (h UserApi) Logout(c *fiber.Ctx) error {
-	username := c.Query("username")
+	username := c.Locals("username").(string)
 	token := c.Query("token")
 	cmd := command.UserLogoutCommand{
 		Username: username,
@@ -148,7 +152,7 @@ func (h UserApi) Logout(c *fiber.Ctx) error {
 
 // Delete 删除用户
 func (h UserApi) Delete(c *fiber.Ctx) error {
-	username := c.Params("username")
+	username := c.Locals("username").(string)
 	if err := h.app.Commands.DeleteUser.Handle(c.Context(), username); err != nil {
 		return err
 	}

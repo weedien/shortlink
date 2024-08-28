@@ -7,7 +7,7 @@ import (
 )
 
 type Response struct {
-	Status string
+	status string
 	Msg    string `json:"msg"`
 }
 
@@ -17,7 +17,7 @@ func RespondWithError(c *fiber.Ctx, err error) error {
 	if errors.Is(err, error_no2.TooManyRequests) {
 		// 请求频率过高
 		r := Response{
-			Status: "Too many requests",
+			status: "Too many requests",
 			Msg:    err.Error(),
 		}
 		return c.Status(fiber.StatusTooManyRequests).JSON(r)
@@ -25,7 +25,7 @@ func RespondWithError(c *fiber.Ctx, err error) error {
 	if errors.Is(err, error_no2.RouteNotFound) {
 		// 请求频率过高
 		r := Response{
-			Status: "Route not found",
+			status: "Route not found",
 			Msg:    err.Error(),
 		}
 		return c.Status(fiber.StatusNotFound).JSON(r)
@@ -35,7 +35,7 @@ func RespondWithError(c *fiber.Ctx, err error) error {
 	if ok := errors.As(err, &slugError); !ok {
 		// 未定义的内部异常
 		r := Response{
-			Status: "Internal server error",
+			status: "Internal server error",
 			Msg:    err.Error(),
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(r)
@@ -45,14 +45,14 @@ func RespondWithError(c *fiber.Ctx, err error) error {
 	case error_no2.ErrorTypeAuthorization:
 		// 未授权
 		r := Response{
-			Status: "Unauthorised",
+			status: "Unauthorised",
 			Msg:    slugError.Error(),
 		}
 		return c.Status(fiber.StatusUnauthorized).JSON(r)
 	case error_no2.ErrorTypeIncorrectInput:
 		// 请求参数错误
 		r := Response{
-			Status: "Bad request",
+			status: "Bad request",
 			Msg:    slugError.Error(),
 		}
 		return c.Status(fiber.StatusBadRequest).JSON(r)
@@ -62,7 +62,7 @@ func RespondWithError(c *fiber.Ctx, err error) error {
 	default:
 		// 未定义的内部异常
 		r := Response{
-			Status: "Internal server error",
+			status: "Internal server error",
 			Msg:    slugError.Error(),
 		}
 		return c.Status(fiber.StatusInternalServerError).JSON(r)

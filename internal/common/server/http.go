@@ -12,23 +12,23 @@ import (
 
 func RunHttpServerOnPort(port string, createHandler func(router fiber.Router)) func() {
 	app := fiber.New(fiber.Config{
-		AppName:      "short-link-service",
+		//AppName:      "short-link-service",
 		ErrorHandler: httperr.ErrorHandler,
 		JSONEncoder:  sonic.Marshal,
 		JSONDecoder:  sonic.Unmarshal,
 	})
 	setupMiddlewares(app)
 
-	// 处理未找到的路由
-	app.All("*", func(c *fiber.Ctx) error {
-		return error_no.RouteNotFound
-	})
-
 	// 监控页面
 	app.Get("/metrics", monitor.New(monitor.Config{Title: "Metrics Page"}))
 
 	apiRouter := app.Group(config.BaseRoutePrefix.String())
 	createHandler(apiRouter)
+
+	// 处理未找到的路由
+	app.All("*", func(c *fiber.Ctx) error {
+		return error_no.RouteNotFound
+	})
 
 	slog.Info("HTTP server is running on port " + port)
 

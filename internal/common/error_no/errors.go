@@ -3,7 +3,9 @@ package error_no
 import "errors"
 
 var (
-	ErrBadRequest = errors.New("bad request")
+	ErrUnauthorized = errors.New("unauthorized")
+	ErrBadRequest   = errors.New("bad request")
+	ErrInternal     = errors.New("internal error")
 
 	ShortLinkNotFound     = errors.New("short link not found")
 	ShortLinkExpired      = errors.New("short link expired")

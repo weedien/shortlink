@@ -22,6 +22,23 @@ type UserRegisterCommand struct {
 	Email    string
 }
 
+func NewUserRegisterHandler(
+	repo user.Repository,
+	locker lock.DistributedLock,
+	groupService GroupService,
+) UserRegisterHandler {
+	if repo == nil {
+		panic("nil repo service")
+	}
+	if locker == nil {
+		panic("nil locker service")
+	}
+	if groupService == nil {
+		panic("nil group service")
+	}
+	return UserRegisterHandler{repo: repo, locker: locker, groupService: groupService}
+}
+
 func (h UserRegisterHandler) Handle(ctx context.Context, cmd UserRegisterCommand) error {
 	if exist, err := h.repo.CheckUserExist(ctx, cmd.Username); err != nil {
 		return err

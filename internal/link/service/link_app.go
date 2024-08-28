@@ -18,7 +18,7 @@ func NewShortLinkApplication(
 	db *gorm.DB,
 	rdb *redis.Client,
 	locker lock.DistributedLock,
-	eventBus base_event.AppEventBus,
+	eventBus base_event.EventBus,
 ) (a app.Application) {
 
 	logger := slog.Default()

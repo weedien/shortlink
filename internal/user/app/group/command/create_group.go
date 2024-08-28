@@ -62,3 +62,15 @@ func (h CreateGroupHandler) Handle(ctx context.Context, cmd CreateGroupCommand) 
 	}
 	return nil
 }
+
+// CreateGroup 创建分组
+// 为其他领域提供服务
+func (h CreateGroupHandler) CreateGroup(
+	ctx context.Context,
+	username, groupName string,
+) error {
+	return h.Handle(ctx, CreateGroupCommand{
+		Username:  username,
+		GroupName: groupName,
+	})
+}

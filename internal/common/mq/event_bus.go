@@ -23,7 +23,7 @@ type RocketMqBasedEventBus struct {
 
 type listenerGroup struct {
 	mu        sync.RWMutex
-	listeners []base_event.AppEventListener
+	listeners []base_event.EventListener
 }
 
 func NewRocketMqBasedEventBus(ctx context.Context) *RocketMqBasedEventBus {
@@ -99,14 +99,14 @@ func (group *listenerGroup) dispatchEvent(ctx context.Context, data []byte, even
 	defer group.mu.RUnlock()
 
 	for _, listener := range group.listeners {
-		go func(listener base_event.AppEventListener) {
+		go func(listener base_event.EventListener) {
 			eventPtr := reflect.New(eventType).Interface()
 			// TODO 出现错误时删除幂等标记
 			if err := sonic.Unmarshal(data, eventPtr); err != nil {
 				slog.Error("Failed to unmarshal message", "error", err)
 				return
 			}
-			if err := listener.Process(ctx, eventPtr.(base_event.AppEvent)); err != nil {
+			if err := listener.Process(ctx, eventPtr.(base_event.Event)); err != nil {
 				slog.Error("Failed to process message", "error", err)
 			}
 			// TODO 将消息标记为已消费
@@ -114,7 +114,7 @@ func (group *listenerGroup) dispatchEvent(ctx context.Context, data []byte, even
 	}
 }
 
-func (bus *RocketMqBasedEventBus) Publish(ctx context.Context, event base_event.AppEvent) {
+func (bus *RocketMqBasedEventBus) Publish(ctx context.Context, event base_event.Event) {
 	marshal, err := sonic.Marshal(event)
 	if err != nil {
 		slog.Error("Failed to marshal event", "error", err)
@@ -136,7 +136,7 @@ func (bus *RocketMqBasedEventBus) Publish(ctx context.Context, event base_event.
 	slog.Info("Sent message to RocketMQ", "resp", resp)
 }
 
-func (bus *RocketMqBasedEventBus) Subscribe(eventType reflect.Type, listener base_event.AppEventListener) {
+func (bus *RocketMqBasedEventBus) Subscribe(eventType reflect.Type, listener base_event.EventListener) {
 	bus.mu.Lock()
 	defer bus.mu.Unlock()
 
@@ -150,7 +150,7 @@ func (bus *RocketMqBasedEventBus) Subscribe(eventType reflect.Type, listener bas
 	group.addListener(listener)
 }
 
-func (group *listenerGroup) addListener(listener base_event.AppEventListener) {
+func (group *listenerGroup) addListener(listener base_event.EventListener) {
 	group.mu.Lock()
 	defer group.mu.Unlock()
 	group.listeners = append(group.listeners, listener)
