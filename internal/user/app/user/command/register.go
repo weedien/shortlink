@@ -14,7 +14,15 @@ type UserRegisterHandler struct {
 	groupService GroupService
 }
 
-func (h UserRegisterHandler) Handle(ctx context.Context, cmd user.UserRegisterVo) error {
+type UserRegisterCommand struct {
+	Username string
+	Password string
+	RealName string
+	Phone    string
+	Email    string
+}
+
+func (h UserRegisterHandler) Handle(ctx context.Context, cmd UserRegisterCommand) error {
 	if exist, err := h.repo.CheckUserExist(ctx, cmd.Username); err != nil {
 		return err
 	} else if exist {

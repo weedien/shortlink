@@ -2,16 +2,19 @@ package http
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/jinzhu/copier"
 	"shortlink/internal/user/app/user"
+	"shortlink/internal/user/app/user/command"
+	"shortlink/internal/user/app/user/query"
 	"shortlink/internal/user/trigger/http/dto/req"
 	"shortlink/internal/user/trigger/http/dto/resp"
 )
 
 type UserApi struct {
-	app user.UserApplication
+	app user.Application
 }
 
-func NewUserApi(app user.UserApplication, router fiber.Router) {
+func NewUserApi(app user.Application, router fiber.Router) {
 	api := &UserApi{app: app}
 
 	userRouter := router.Group("/user")
@@ -28,26 +31,40 @@ func NewUserApi(app user.UserApplication, router fiber.Router) {
 
 // GetUserByUsername 根据用户名查询用户信息
 func (h UserApi) GetUserByUsername(c *fiber.Ctx) error {
-	_ = c.Params("username")
+	username := c.Params("username")
 	response := resp.UserResp{}
-
+	res, err := h.app.Queries.GetUser.Handle(c.Context(), username)
+	if err != nil {
+		return err
+	}
+	if err = copier.Copy(&response, res); err != nil {
+		return err
+	}
 	return c.JSON(response)
 }
 
 // GetUserByUsernameWithoutMask 根据用户名查询无脱敏用户信息
 func (h UserApi) GetUserByUsernameWithoutMask(c *fiber.Ctx) error {
-	_ = c.Params("username")
+	username := c.Params("username")
 	response := resp.UserActualResp{}
-
+	res, err := h.app.Queries.GetUser.Handle(c.Context(), username)
+	if err != nil {
+		return err
+	}
+	if err = copier.Copy(&response, res); err != nil {
+		return err
+	}
 	return c.JSON(response)
 }
 
 // CheckUserExist 查询用户是否存在
 func (h UserApi) CheckUserExist(c *fiber.Ctx) error {
-
-	_ = c.Query("username")
-
-	return c.JSON(false)
+	username := c.Query("username")
+	exist, err := h.app.Queries.CheckUserExist.Handle(c.Context(), username)
+	if err != nil {
+		return err
+	}
+	return c.JSON(exist)
 }
 
 // Register 用户注册
@@ -56,7 +73,13 @@ func (h UserApi) Register(c *fiber.Ctx) error {
 	if err := c.BodyParser(&reqParam); err != nil {
 		return err
 	}
-
+	cmd := command.UserRegisterCommand{}
+	if err := copier.Copy(&cmd, &reqParam); err != nil {
+		return err
+	}
+	if err := h.app.Commands.UserRegister.Handle(c.Context(), cmd); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -66,7 +89,13 @@ func (h UserApi) Update(c *fiber.Ctx) error {
 	if err := c.BodyParser(&reqParam); err != nil {
 		return err
 	}
-
+	cmd := command.UpdateUserCommand{}
+	if err := copier.Copy(&cmd, &reqParam); err != nil {
+		return err
+	}
+	if err := h.app.Commands.UpdateUser.Handle(c.Context(), cmd); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -77,27 +106,51 @@ func (h UserApi) Login(c *fiber.Ctx) error {
 		return err
 	}
 	response := resp.UserLoginResp{}
-
+	cmd := command.UserLoginCommand{}
+	if err := copier.Copy(&cmd, &reqParam); err != nil {
+		return err
+	}
+	if err := h.app.Commands.UserLogin.Handle(c.Context(), cmd); err != nil {
+		return err
+	}
+	response.Token = cmd.ExecutionResult()
 	return c.JSON(response)
 }
 
 // CheckLogin 检查用户是否登录
 func (h UserApi) CheckLogin(c *fiber.Ctx) error {
-	_ = c.Query("username")
-
-	return c.JSON(false)
+	username := c.Query("username")
+	token := c.Query("token")
+	q := query.CheckLogin{
+		Username: username,
+		Token:    token,
+	}
+	login, err := h.app.Queries.CheckLogin.Handle(c.Context(), q)
+	if err != nil {
+		return err
+	}
+	return c.JSON(login)
 }
 
 // Logout 用户登出
 func (h UserApi) Logout(c *fiber.Ctx) error {
-	_ = c.Query("username")
-
+	username := c.Query("username")
+	token := c.Query("token")
+	cmd := command.UserLogoutCommand{
+		Username: username,
+		Token:    token,
+	}
+	if err := h.app.Commands.UserLogout.Handle(c.Context(), cmd); err != nil {
+		return err
+	}
 	return nil
 }
 
 // Delete 删除用户
 func (h UserApi) Delete(c *fiber.Ctx) error {
-	_ = c.Params("username")
-
+	username := c.Params("username")
+	if err := h.app.Commands.DeleteUser.Handle(c.Context(), username); err != nil {
+		return err
+	}
 	return nil
 }
