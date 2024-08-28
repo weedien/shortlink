@@ -8,10 +8,10 @@ import (
 )
 
 type GroupApi struct {
-	app group.GroupApplication
+	app group.Application
 }
 
-func NewGroupApi(app group.GroupApplication, router fiber.Router) {
+func NewGroupApi(app group.Application, router fiber.Router) {
 	api := &GroupApi{app: app}
 
 	groupRouter := router.Group("/group")
