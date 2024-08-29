@@ -8,7 +8,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/favicon"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"shortlink/internal/common/config"
 	"shortlink/internal/common/error_no"
@@ -27,6 +26,6 @@ func setupMiddlewares(app *fiber.App) {
 		},
 	}))
 	app.Use(logger.New())
-	app.Use(recover.New())
+	//app.Use(recover.New())
 	app.Use(requestid.New())
 }

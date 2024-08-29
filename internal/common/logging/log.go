@@ -7,7 +7,7 @@ import (
 
 func InitLogger() {
 	rollingIO := &lumberjack.Logger{
-		Filename:   "logPath",
+		Filename:   "logs/app.log",
 		MaxSize:    64, // megabytes
 		MaxBackups: 30, // maxBackUps
 		MaxAge:     30, //days

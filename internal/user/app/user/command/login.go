@@ -11,7 +11,7 @@ type UserLoginCommand struct {
 	result   string
 }
 
-func (c UserLoginCommand) ExecutionResult() string {
+func (c *UserLoginCommand) ExecutionResult() string {
 	return c.result
 }
 
@@ -27,7 +27,7 @@ func NewUserLoginHandler(repo user.Repository) UserLoginHandler {
 	return UserLoginHandler{repo: repo}
 }
 
-func (h UserLoginHandler) Handle(ctx context.Context, cmd UserLoginCommand) (err error) {
+func (h UserLoginHandler) Handle(ctx context.Context, cmd *UserLoginCommand) (err error) {
 	var token string
 	if token, err = h.repo.Login(ctx, cmd.Username, cmd.Password); err != nil {
 		return

@@ -16,8 +16,8 @@ type GroupRepository struct {
 	rdb *redis.Client
 }
 
-func NewGroupRepositoryImpl(db *gorm.DB) GroupRepository {
-	return GroupRepository{db: db}
+func NewGroupRepositoryImpl(db *gorm.DB, rdb *redis.Client) GroupRepository {
+	return GroupRepository{db: db, rdb: rdb}
 }
 
 func (r GroupRepository) ListGroup(ctx context.Context, username string) ([]group.Group, error) {
@@ -48,9 +48,8 @@ func (r GroupRepository) CreateGroup(ctx context.Context, g group.Group) error {
 	return nil
 }
 
-func (r GroupRepository) GetGroupSize(ctx context.Context) (int, error) {
+func (r GroupRepository) GetGroupSize(ctx context.Context, username string) (int, error) {
 	var count int64
-	username := ctx.Value("username").(string)
 	if err := r.db.Model(&po.Group{}).Where("username = ?", username).Count(&count).Error; err != nil {
 		return 0, err
 	}

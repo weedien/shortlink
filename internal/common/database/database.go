@@ -12,7 +12,8 @@ func ConnectToDatabase() *gorm.DB {
 	dsn := config.Default("DSN", config.DSN.String())
 	db, err := gorm.Open(postgres.New(postgres.Config{DSN: dsn}), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
-			TablePrefix: "t_",
+			TablePrefix:   "t_",
+			SingularTable: true,
 		},
 	})
 	if err != nil {

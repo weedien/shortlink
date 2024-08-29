@@ -6,6 +6,7 @@ import (
 	"shortlink/internal/common/error_no"
 	"shortlink/internal/common/lock"
 	"shortlink/internal/user/domain/user"
+	"time"
 )
 
 type UserRegisterHandler struct {
@@ -47,12 +48,12 @@ func (h UserRegisterHandler) Handle(ctx context.Context, cmd UserRegisterCommand
 	}
 	// 获取分布式锁
 	lockKey := constant.LockUserRegisterKey + cmd.Username
-	if _, err := h.locker.Acquire(ctx, lockKey, -1); err != nil {
+	if _, err := h.locker.Acquire(ctx, lockKey, 1*time.Hour); err != nil {
 		return error_no.LockAcquireFailed
 	}
-	defer func() {
+	defer func(ctx context.Context, lockKey string) {
 		_ = h.locker.Release(ctx, lockKey)
-	}()
+	}(ctx, lockKey)
 	// 再次检查用户是否存在
 	if exist, err := h.repo.CheckUserExist(ctx, cmd.Username); err != nil {
 		return err
@@ -60,17 +61,17 @@ func (h UserRegisterHandler) Handle(ctx context.Context, cmd UserRegisterCommand
 		return error_no.UserExist
 	}
 	// 创建用户
-	user := user.NewUser(cmd.Username, cmd.Password, cmd.RealName, cmd.Email, cmd.Phone)
-	if err := h.repo.CreateUser(ctx, &user); err != nil {
+	u := user.NewUser(cmd.Username, cmd.Password, cmd.RealName, cmd.Email, cmd.Phone)
+	if err := h.repo.CreateUser(ctx, &u); err != nil {
 		return err
 	}
 	// 加入分组
-	if err := h.groupService.CreateGroup(ctx, user.Name(), "默认分组"); err != nil {
+	if err := h.groupService.CreateGroup(ctx, u.Name(), "默认分组"); err != nil {
 		return err
 	}
 	// 加入布隆过滤器
-	if err := h.repo.AddUserToBloomFilter(ctx, user.Name()); err != nil {
-		return err
-	}
+	//if err := h.repo.AddUserToBloomFilter(ctx, u.Name()); err != nil {
+	//	return err
+	//}
 	return nil
 }

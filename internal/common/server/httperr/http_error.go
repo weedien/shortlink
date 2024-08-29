@@ -12,7 +12,6 @@ type Response struct {
 }
 
 func RespondWithError(c *fiber.Ctx, err error) error {
-
 	// 在这里去处理一些很特殊的error，比如能和http状态码直接对应
 	if errors.Is(err, error_no2.TooManyRequests) {
 		// 请求频率过高

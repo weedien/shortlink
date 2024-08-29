@@ -5,8 +5,6 @@ import (
 	"time"
 )
 
-const TableNameUser = "user"
-
 // User mapped from table <user>
 type User struct {
 	ID         int            `gorm:"column:id;primaryKey;autoIncrement:true;comment:ID" json:"id"`                 // ID
@@ -18,9 +16,4 @@ type User struct {
 	DeleteTime gorm.DeletedAt `gorm:"column:delete_time;comment:注销时间戳" json:"delete_time"`                          // 注销时间戳
 	CreateTime time.Time      `gorm:"column:create_time;default:CURRENT_TIMESTAMP;comment:创建时间" json:"create_time"` // 创建时间
 	UpdateTime time.Time      `gorm:"column:update_time;default:CURRENT_TIMESTAMP;comment:修改时间" json:"update_time"` // 修改时间
-}
-
-// TableName User's table name
-func (*User) TableName() string {
-	return TableNameUser
 }

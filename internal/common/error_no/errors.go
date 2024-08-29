@@ -20,6 +20,7 @@ var (
 	UserNotExist                    = errors.New("user not exist")
 	UserExist                       = errors.New("user exist")
 	UserForbidden                   = errors.New("user forbidden")
+	UserUnlogged                    = errors.New("user unlogged")
 	InvalidTokenOrUnloggedLoginUser = errors.New("invalid token or unlogged user")
 )
 

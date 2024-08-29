@@ -25,11 +25,14 @@ func main() {
 	rdb := cache.ConnectToRedis()
 
 	// 创建应用服务
-	groupApp := service.NewGroupApplication(db, nil)
+	groupApp := service.NewGroupApplication(db, rdb, nil)
 	userApp := service.NewUserApplication(db, rdb, groupApp.Commands.CreateGroup)
 
+	// 不需要鉴权的接口
+	excludes := []string{"/users/login", "/users/register", "/users/check-login", "/users/exist"}
+
 	cleanup := server.RunHttpServerOnPort("8080", func(router fiber.Router) {
-		router.Use(auth.New(rdb)) // 鉴权中间件
+		router.Use(auth.New(rdb, excludes)) // 鉴权中间件
 		server.NewUriTitleApi(router)
 		rest.NewUserApi(userApp, router)
 		rest.NewGroupApi(groupApp, router)

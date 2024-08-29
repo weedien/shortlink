@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"context"
+	"errors"
 	"github.com/bytedance/sonic"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -35,13 +36,27 @@ func (r UserRepositoryImpl) CheckUserExist(ctx context.Context, username string)
 }
 
 func (r UserRepositoryImpl) CreateUser(ctx context.Context, u *user.User) error {
-	//TODO implement me
-	panic("implement me")
+	userPo := po.User{
+		Username: u.Name(),
+		Password: u.Password(),
+		RealName: u.RealName(),
+		Phone:    u.Phone(),
+		Mail:     u.Email(),
+	}
+	if err := r.db.Create(&userPo).Error; err != nil {
+		return err
+	}
+	if err := r.rdb.BFAdd(ctx, constant.UserRegisterBloomFilter, u.Name()).Err(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r UserRepositoryImpl) AddUserToBloomFilter(ctx context.Context, name string) error {
-	//TODO implement me
-	panic("implement me")
+	if err := r.rdb.BFAdd(ctx, constant.UserRegisterBloomFilter, name).Err(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r UserRepositoryImpl) UpdateUser(ctx context.Context, u *user.User) error {
@@ -52,7 +67,9 @@ func (r UserRepositoryImpl) UpdateUser(ctx context.Context, u *user.User) error 
 func (r UserRepositoryImpl) CheckLogin(ctx context.Context, username string, token string) (flag bool, err error) {
 	var value string
 	if value, err = r.rdb.HGet(ctx, constant.UserLoginKey+username, token).Result(); err != nil {
-		return false, err
+		if errors.Is(err, redis.Nil) {
+			return false, nil
+		}
 	}
 	if value != "" {
 		flag = true

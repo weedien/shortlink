@@ -5,6 +5,7 @@ import (
 	"shortlink/internal/common/constant"
 	"shortlink/internal/common/lock"
 	"shortlink/internal/user/domain/group"
+	"time"
 )
 
 type CreateGroupCommand struct {
@@ -17,25 +18,29 @@ type CreateGroupHandler struct {
 	locker lock.DistributedLock
 }
 
-func NewCreateGroupHandler(repo group.Repository) CreateGroupHandler {
+func NewCreateGroupHandler(repo group.Repository, locker lock.DistributedLock) CreateGroupHandler {
 	if repo == nil {
 		panic("nil repo service")
 	}
 
-	return CreateGroupHandler{repo: repo}
+	if locker == nil {
+		panic("nil locker service")
+	}
+
+	return CreateGroupHandler{repo: repo, locker: locker}
 }
 
 func (h CreateGroupHandler) Handle(ctx context.Context, cmd CreateGroupCommand) (err error) {
 	lockKey := constant.LockGroupCreateKey + cmd.GroupName
-	if _, err = h.locker.Acquire(ctx, lockKey, -1); err != nil {
+	if _, err = h.locker.Acquire(ctx, lockKey, 1*time.Hour); err != nil {
 		return err
 	}
-	defer func() {
+	defer func(ctx context.Context, lockKey string) {
 		_ = h.locker.Release(ctx, lockKey)
-	}()
+	}(ctx, lockKey)
 	// 最大分组数限制
 	var size int
-	if size, err = h.repo.GetGroupSize(ctx); err != nil {
+	if size, err = h.repo.GetGroupSize(ctx, cmd.Username); err != nil {
 		return err
 	}
 	if size >= group.MaxGroupSize {

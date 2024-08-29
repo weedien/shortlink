@@ -5,8 +5,6 @@ import (
 	"time"
 )
 
-const TableNameGroup = "group"
-
 // Group mapped from table <group>
 type Group struct {
 	ID         int            `gorm:"column:id;primaryKey;autoIncrement:true;comment:ID" json:"id"`                 // ID
@@ -17,9 +15,4 @@ type Group struct {
 	CreateTime time.Time      `gorm:"column:create_time;default:CURRENT_TIMESTAMP;comment:创建时间" json:"create_time"` // 创建时间
 	UpdateTime time.Time      `gorm:"column:update_time;default:CURRENT_TIMESTAMP;comment:修改时间" json:"update_time"` // 修改时间
 	DeleteTime gorm.DeletedAt `gorm:"column:delete_time;comment:删除时间" json:"delete_time"`                           // 删除时间
-}
-
-// TableName Group's table name
-func (*Group) TableName() string {
-	return TableNameGroup
 }

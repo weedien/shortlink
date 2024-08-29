@@ -17,16 +17,16 @@ type UserApi struct {
 func NewUserApi(app user.Application, router fiber.Router) {
 	api := &UserApi{app: app}
 
-	userRouter := router.Group("/user")
-	userRouter.Get("/:username", api.GetUserByUsername)
+	userRouter := router.Group("/users")
+	userRouter.Get("/username/:username", api.GetUserByUsername)
 	userRouter.Get("/actual/:username", api.GetUserByUsernameWithoutMask)
 	userRouter.Get("/exist", api.CheckUserExist)
 	userRouter.Get("/check-login", api.CheckLogin)
-	userRouter.Post("", api.Register)
+	userRouter.Post("/register", api.Register)
 	userRouter.Post("/login", api.Login)
 	userRouter.Post("/logout", api.Logout)
 	userRouter.Put("", api.Update)
-	userRouter.Delete("/:username", api.Delete)
+	userRouter.Delete("/username/:username", api.Delete)
 }
 
 // GetUserByUsername 根据用户名查询用户信息
@@ -59,7 +59,7 @@ func (h UserApi) GetUserByUsernameWithoutMask(c *fiber.Ctx) error {
 
 // CheckUserExist 查询用户是否存在
 func (h UserApi) CheckUserExist(c *fiber.Ctx) error {
-	username := c.Locals("username").(string)
+	username := c.Query("username")
 	exist, err := h.app.Queries.CheckUserExist.Handle(c.Context(), username)
 	if err != nil {
 		return err
@@ -106,8 +106,8 @@ func (h UserApi) Login(c *fiber.Ctx) error {
 		return err
 	}
 	response := resp.UserLoginResp{}
-	cmd := command.UserLoginCommand{}
-	if err := copier.Copy(&cmd, &reqParam); err != nil {
+	cmd := &command.UserLoginCommand{}
+	if err := copier.Copy(cmd, &reqParam); err != nil {
 		return err
 	}
 	if err := h.app.Commands.UserLogin.Handle(c.Context(), cmd); err != nil {
@@ -115,15 +115,17 @@ func (h UserApi) Login(c *fiber.Ctx) error {
 	}
 	response.Token = cmd.ExecutionResult()
 	c.Cookie(&fiber.Cookie{
-		Name:  "token",
-		Value: response.Token,
+		Name:     "token",
+		Value:    response.Token,
+		HTTPOnly: true,
+		MaxAge:   3600,
 	})
 	return c.JSON(response)
 }
 
 // CheckLogin 检查用户是否登录
 func (h UserApi) CheckLogin(c *fiber.Ctx) error {
-	username := c.Locals("username").(string)
+	username := c.Query("username")
 	token := c.Query("token")
 	q := query.CheckLogin{
 		Username: username,

@@ -4,11 +4,19 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/gofiber/fiber/v2"
 	"github.com/redis/go-redis/v9"
+	"shortlink/internal/common/config"
 	"shortlink/internal/common/error_no"
 )
 
-func New(redisClient *redis.Client) fiber.Handler {
+func New(redisClient *redis.Client, excludes []string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		// 排除不需要鉴权的接口
+		baseUrl := config.BaseRoutePrefix.String()
+		for _, exclude := range excludes {
+			if baseUrl+exclude == c.Path() {
+				return c.Next()
+			}
+		}
 		// 获取请求头中的 Authorization 字段
 		token := c.Get("Authorization")
 		if token == "" {
