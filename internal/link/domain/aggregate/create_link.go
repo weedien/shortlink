@@ -1,15 +1,15 @@
 package aggregate
 
 import (
-	"shortlink/internal/link/domain/entity"
+	"shortlink/internal/link/domain/link"
 )
 
 type CreateLinkAggregate struct {
-	ShortLink     entity.Link
-	ShortLinkGoto entity.LinkGoto
+	ShortLink     link.Link
+	ShortLinkGoto link.Goto
 }
 
-func NewCreateLinkAggregate(shortLink entity.Link, shortLinkGoto entity.LinkGoto) CreateLinkAggregate {
+func NewCreateLinkAggregate(shortLink link.Link, shortLinkGoto link.Goto) CreateLinkAggregate {
 	return CreateLinkAggregate{
 		ShortLink:     shortLink,
 		ShortLinkGoto: shortLinkGoto,

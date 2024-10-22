@@ -3,10 +3,9 @@ package http
 import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/jinzhu/copier"
-	"shortlink/internal/common/constant"
 	"shortlink/internal/link/app"
 	"shortlink/internal/link/app/query"
-	"shortlink/internal/link/domain/entity"
+	"shortlink/internal/link/domain/link"
 	"shortlink/internal/link/trigger/http/dto/req"
 	"shortlink/internal/link/trigger/http/dto/resp"
 )
@@ -38,9 +37,9 @@ func (h RecycleBinApi) SaveToRecycleBin(c *fiber.Ctx) error {
 		return err
 	}
 
-	err := h.app.Commands.SaveToRecycleBin.Handle(c.Context(), entity.LinkID{
-		Gid:          reqParam.Gid,
-		FullShortUrl: reqParam.FullShortUrl,
+	err := h.app.Commands.SaveToRecycleBin.Handle(c.Context(), link.Identifier{
+		Gid:      reqParam.Gid,
+		ShortUri: reqParam.FullShortUrl,
 	})
 	if err != nil {
 		return err
@@ -61,7 +60,7 @@ func (h RecycleBinApi) PageQueryRecycleBin(c *fiber.Ctx) error {
 	res, err := h.app.Queries.PageDisabledLink.Handle(c.Context(), query.PageRecycleBin{
 		PageReq:      reqParam.PageReq,
 		GidList:      reqParam.GidList,
-		EnableStatus: constant.StatusDisable,
+		EnableStatus: link.StatusDisabled,
 	})
 	if err != nil {
 		return err
@@ -82,9 +81,9 @@ func (h RecycleBinApi) RecoverShortLink(c *fiber.Ctx) error {
 		return err
 	}
 
-	err := h.app.Commands.RecoverFromRecycleBin.Handle(c.Context(), entity.LinkID{
-		Gid:          reqParam.Gid,
-		FullShortUrl: reqParam.FullShortUrl,
+	err := h.app.Commands.RecoverFromRecycleBin.Handle(c.Context(), link.Identifier{
+		Gid:      reqParam.Gid,
+		ShortUri: reqParam.FullShortUrl,
 	})
 	if err != nil {
 		c.Status(fiber.StatusInternalServerError)
@@ -104,9 +103,9 @@ func (h RecycleBinApi) RemoveFromRecycleBin(c *fiber.Ctx) error {
 		return err
 	}
 
-	err := h.app.Commands.RemoveFromRecycleBin.Handle(c.Context(), entity.LinkID{
-		Gid:          reqParam.Gid,
-		FullShortUrl: reqParam.FullShortUrl,
+	err := h.app.Commands.RemoveFromRecycleBin.Handle(c.Context(), link.Identifier{
+		Gid:      reqParam.Gid,
+		ShortUri: reqParam.FullShortUrl,
 	})
 	if err != nil {
 		c.Status(fiber.StatusInternalServerError)

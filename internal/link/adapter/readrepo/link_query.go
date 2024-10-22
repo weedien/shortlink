@@ -2,152 +2,333 @@ package readrepo
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"github.com/bsm/redislock"
 	"github.com/jinzhu/copier"
-	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
-	"shortlink/internal/common/cache"
-	"shortlink/internal/common/constant"
-	"shortlink/internal/common/lock"
 	"shortlink/internal/common/types"
+	"shortlink/internal/link/adapter/po"
 	"shortlink/internal/link/adapter/readrepo/dao"
 	"shortlink/internal/link/app/query"
-	"shortlink/internal/link/domain/entity"
-
-	"shortlink/internal/common/error_no"
-	"shortlink/internal/common/toolkit"
-
-	"time"
+	"shortlink/internal/link/domain/link"
 )
 
 type LinkQuery struct {
-	linkDao dao.LinkDao
-	rdb     *redis.Client
-	locker  lock.DistributedLock
+	linkFactory *link.Factory
+	linkDao     dao.LinkDao
 }
 
-func NewLinkQuery(db *gorm.DB) LinkQuery {
-	return LinkQuery{linkDao: dao.NewLinkDao(db)}
+func NewLinkQuery(db *gorm.DB, factory *link.Factory) LinkQuery {
+	return LinkQuery{
+		linkFactory: factory,
+		linkDao:     dao.NewLinkDao(db),
+	}
 }
 
-// GetOriginalUrlByShortUrl 根据短链接获取原始链接
-func (q LinkQuery) GetOriginalUrlByShortUrl(ctx context.Context, fullShortUrl string) (string, error) {
-	// 尝试从缓存中获取短链的原始链接，存在则直接返回
-	key := fmt.Sprintf(constant.GotoShortLinkKey, fullShortUrl)
-	value := q.rdb.Get(ctx, key).String()
-	if value != "" {
-		return value, nil
-	}
+// GetOriginalUrlByShortUri 根据短链接获取原始链接
+//func (q LinkQuery) GetOriginalUrlByShortUri(ctx context.Context, shortUri string) (int, *string, error) {
+//
+//	getFromCache := func(key string) (string, error) {
+//		val, err := q.rdb.Get(ctx, key).Result()
+//		if errors.Is(err, redis.Nil) {
+//			return "", nil
+//		}
+//		return val, err
+//	}
+//
+//	// 尝试从缓存中获取短链的原始链接，存在则直接返回
+//	key := fmt.Sprintf(constant.GotoShortLinkKey, shortUri)
+//	originalUrl, err := getFromCache(key)
+//	if err != nil {
+//		return "", err
+//	}
+//	if originalUrl != "" {
+//		return originalUrl, nil
+//	}
+//
+//	// 如果缓存中没有，判断是否存在于布隆过滤器中，不存在返回 not found
+//	exists, err := q.rdb.BFExists(ctx, cache.ShortUriCreateBloomFilter, shortUri).Result()
+//	if err != nil {
+//		return "", err
+//	}
+//	if !exists {
+//		return "", error_no.ShortLinkNotExists
+//	}
+//
+//	// 从缓存中获取 GotoIsNullShortLink 的值，如果存在则意味着短链接失效，返回 not found
+//	key = fmt.Sprintf(constant.GotoIsNullShortLinkKey, shortUri)
+//	gotoIsNullShortLink, err := getFromCache(key)
+//	if err != nil {
+//		return "", err
+//	}
+//	if gotoIsNullShortLink != "" {
+//		return "", error_no.ShortLinkExpired
+//	}
+//
+//	// 获取分布式锁，并进行二次锁判定，尝试从数据库中获取原始链接，并写入缓存
+//	lockKey := fmt.Sprintf(constant.LockGotoShortLinkKey, shortUri)
+//	_, err = q.locker.Acquire(ctx, lockKey, constant.DefaultTimeOut)
+//	if errors.Is(err, redislock.ErrNotObtained) {
+//		return "", error_no.LockAcquireFailed
+//	}
+//	defer func() {
+//		if err = q.locker.Release(ctx, lockKey); err != nil {
+//			err = error_no.LockReleaseFailed
+//		}
+//	}()
+//
+//	// ------------- 在查询数据库之前再进行一次判断，防止缓存击穿 -------------
+//	// 在高并发场景下，会存在多个线程同时竞争锁，但只有一个线程能够获取锁
+//	// 第一个线程执行结束后，其他线程再次尝试获取锁，此时缓存中已经有值，直接返回
+//	// TODO: 优化方案，可以使用分布式锁的续租功能，避免锁过期导致的缓存击穿
+//	// TODO: 目前我是以Java的思维来写的，Go的锁机制可能有更好的解决方案
+//	key = fmt.Sprintf(constant.GotoShortLinkKey, shortUri)
+//	originalUrl = q.rdb.Get(ctx, key).String()
+//	if originalUrl != "" {
+//		return originalUrl, nil
+//	}
+//
+//	key = fmt.Sprintf(constant.GotoIsNullShortLinkKey, shortUri)
+//	gotoIsNullShortLink = q.rdb.Get(ctx, key).String()
+//	if gotoIsNullShortLink != "" {
+//		return "", error_no.ShortLinkExpired
+//	}
+//
+//	// 当短链接存在且有效时 返回 true, originalUrl, nil
+//	// 当短链接处于失效/停用/回收站状态时 返回 false, nil, nil
+//	fetchFromDB := func() (interface{}, error) {
+//		linkGotoPo, err := q.linkDao.GetLinkGoto(ctx, shortUri)
+//		if err != nil {
+//			return nil, err
+//		}
+//		if linkGotoPo == nil {
+//			return nil, nil
+//		}
+//		linkPo, err := q.linkDao.GetLink(ctx, link.Identifier{ShortUri: shortUri, Gid: linkGotoPo.Gid})
+//		if err != nil {
+//			return nil, err
+//		}
+//		return linkPo, nil
+//	}
+//
+//	// 查询数据库
+//	linkGotoPo, err := q.linkDao.GetLinkGoto(ctx, shortUri)
+//	if err != nil {
+//		return "", err
+//	}
+//	// 数据库中不存在这个短链接
+//	if linkGotoPo == nil {
+//		key = fmt.Sprintf(constant.GotoIsNullShortLinkKey, shortUri)
+//		q.rdb.SetEx(ctx, key, "-", constant.DefaultExpiration)
+//		return "", error_no.ShortLinkNotExists
+//	}
+//	// 数据库中存在短链接，则查询link表获取原始链接
+//	linkPo, err := q.linkDao.GetLink(ctx, link.Identifier{ShortUri: shortUri, Gid: linkGotoPo.Gid})
+//	if err != nil {
+//		return "", err
+//	}
+//	// 短链接为空或者已经过期
+//	if linkPo == nil || linkPo.ValidEndTime.Before(time.Now()) {
+//		// 写入缓存
+//		key = fmt.Sprintf(constant.GotoIsNullShortLinkKey, shortUri)
+//		q.rdb.SetEx(ctx, key, "-", constant.DefaultExpiration)
+//		return "", error_no.ShortLinkExpired
+//	}
+//	// 查询到有效的原始链接，写入缓存
+//	key = fmt.Sprintf(constant.GotoShortLinkKey, shortUri)
+//	err = q.rdb.SetEx(ctx, key, linkPo.OriginalUrl, toolkit.GetLinkCacheExpiration(linkPo.ValidEndTime)).Err()
+//	if err != nil {
+//		return "", err
+//	}
+//	return linkPo.OriginalUrl, err
+//}
 
-	// 如果缓存中没有，判断是否存在于布隆过滤器中，不存在返回 not found
-	exists, err := q.rdb.BFExists(ctx, cache.ShortUriCreateBloomFilter, fullShortUrl).Result()
-	if err != nil {
-		return "", err
-	}
-	if !exists {
-		return "", error_no.ShortLinkNotFound
-	}
-
-	// 从缓存中获取 GotoIsNullShortLink 的值，如果存在则意味着短链接失效，返回 not found
-	key = fmt.Sprintf(constant.GotoIsNullShortLinkKey, fullShortUrl)
-	gotoIsNullShortLink := q.rdb.Get(ctx, key).String()
-	if gotoIsNullShortLink != "" {
-		return "", error_no.ShortLinkExpired
-	}
-
-	// 获取分布式锁，并进行二次锁判定，尝试从数据库中获取原始链接，并写入缓存
-	lockKey := fmt.Sprintf(constant.LockGotoShortLinkKey, fullShortUrl)
-	_, err = q.locker.Acquire(ctx, lockKey, time.Second)
-	if errors.Is(err, redislock.ErrNotObtained) {
-		return "", error_no.LockAcquireFailed
-	}
-	defer func() {
-		if err = q.locker.Release(ctx, lockKey); err != nil {
-			err = error_no.LockReleaseFailed
-		}
-	}()
-
-	// ------------- 在查询数据库之前再进行一次判断，防止缓存击穿 -------------
-	// 在高并发场景下，会存在多个线程同时竞争锁，但只有一个线程能够获取锁
-	// 第一个线程执行结束后，其他线程再次尝试获取锁，此时缓存中已经有值，直接返回
-	// TODO: 优化方案，可以使用分布式锁的续租功能，避免锁过期导致的缓存击穿
-	// TODO: 目前我是以Java的思维来写的，Go的锁机制可能有更好的解决方案
-	key = fmt.Sprintf(constant.GotoShortLinkKey, fullShortUrl)
-	value = q.rdb.Get(ctx, key).String()
-	if value != "" {
-		return value, nil
-	}
-
-	key = fmt.Sprintf(constant.GotoIsNullShortLinkKey, fullShortUrl)
-	gotoIsNullShortLink = q.rdb.Get(ctx, key).String()
-	if gotoIsNullShortLink != "" {
-		return "", error_no.ShortLinkExpired
-	}
-
-	// 查询数据库
-	linkGotoPo, err := q.linkDao.GetLinkGoto(ctx, fullShortUrl)
-	if err != nil {
-		return "", err
-	}
-	// 数据库中不存在这个短链接
-	if linkGotoPo.FullShortUrl == "" {
-		key = fmt.Sprintf(constant.GotoIsNullShortLinkKey, fullShortUrl)
-		q.rdb.SetEx(ctx, key, "-", 30*time.Minute)
-		return "", error_no.ShortLinkNotFound
-	}
-	// 数据库中存在短链接，则查询link表获取原始链接
-	linkPo, err := q.linkDao.GetLink(ctx, entity.LinkID{FullShortUrl: fullShortUrl, Gid: linkGotoPo.Gid})
-	if err != nil {
-		return "", err
-	}
-	// 短链接失效
-	if linkPo.FullShortUrl == "" || linkPo.ValidDate.Before(time.Now()) {
-		// 写入缓存
-		key = fmt.Sprintf(constant.GotoIsNullShortLinkKey, fullShortUrl)
-		q.rdb.SetEx(ctx, key, "-", 30*time.Minute)
-		return "", error_no.ShortLinkExpired
-	}
-	// 查询到有效的原始链接，写入缓存
-	key = fmt.Sprintf(constant.GotoShortLinkKey, fullShortUrl)
-	err = q.rdb.SetEx(ctx, key, linkPo.OriginalUrl, toolkit.GetLinkCacheExpiration(linkPo.ValidDate)).Err()
-	if err != nil {
-		return "", err
-	}
-	return linkPo.OriginalUrl, err
-}
+// GetWithCacheAndLock 一个通用的方法，先从缓存中查找，如果不存在，使用分布式锁，进行双重锁判定，从数据库查，然后写入缓存
+//
+// 能从缓存中查到的短链一定是有效的吗？是的
+//func GetWithCacheAndLock[T any](
+//	ctx context.Context,
+//	cacheKey string,
+//	lockKey string,
+//	exceptKey string, // 用于从 bloom filter 中排除已失效的数据
+//	expiration time.Duration,
+//	bloomFilter string,
+//	fetchFromDB func() (T, error),
+//) (val T, err error) {
+//	// step1: 尝试从缓存中取值
+//	cacheVal, err := q.rdb.Get(ctx, cacheKey).Result()
+//	if err == nil && cacheVal != "" {
+//		// Assuming the cached value is a JSON string, unmarshal it into the generic type T
+//		err = sonic.Unmarshal([]byte(cacheVal), &val)
+//		if err == nil {
+//			return val, nil
+//		}
+//	}
+//
+//	// step2: 缓存中没有，通过 布隆过滤器+失效缓存 判断是否存在
+//	// case1: bloom filter 中不存在 则数据一定不存在
+//	exists := false
+//	if exists, err = q.rdb.BFExists(ctx, bloomFilter, cacheKey).Result(); err != nil {
+//		return val, err
+//	}
+//	if !exists {
+//		return val, error_no.ShortLinkNotExists
+//	}
+//	// case2: bloom filter 中存在 但失效缓存中也存在 则数据已失效
+//	if cacheVal, err = q.rdb.Get(ctx, exceptKey).Result(); err != nil {
+//		if errors.Is(err, redis.Nil) {
+//			// 数据存在且有效
+//		} else {
+//			// redis 异常
+//			return val, errors.Join(err, error_no.RedisError)
+//		}
+//	} else {
+//		// 数据已失效
+//		return val, error_no.ShortLinkExpired
+//	}
+//
+//	// step3: 获取分布式锁
+//	acquired := false
+//	if acquired, err = q.locker.Acquire(ctx, lockKey, expiration); err != nil {
+//		return val, err
+//	}
+//	if !acquired {
+//		return val, error_no.LockAcquireFailed
+//	}
+//	defer func(locker lock.DistributedLock, ctx context.Context, key string) {
+//		if releaseErr := locker.Release(ctx, key); releaseErr != nil {
+//			err = releaseErr
+//		}
+//	}(q.locker, ctx, lockKey)
+//
+//	// 双重判断，防止缓存击穿
+//	if cacheVal, err = q.rdb.Get(ctx, cacheKey).Result(); err != nil {
+//		if errors.Is(err, redis.Nil) {
+//			return val, error_no.ShortLinkNotExists
+//		} else {
+//			return val, errors.Join(err, error_no.RedisError)
+//		}
+//	} else if cacheVal != "" {
+//		err = sonic.Unmarshal([]byte(cacheVal), &val)
+//		if err == nil {
+//			return val, nil
+//		}
+//	}
+//	if cacheVal, err = q.rdb.Get(ctx, exceptKey).Result(); err != nil {
+//		if errors.Is(err, redis.Nil) {
+//			// 数据存在且有效
+//		} else {
+//			// redis 异常
+//			return val, errors.Join(err, error_no.RedisError)
+//		}
+//	} else {
+//		// 数据已失效
+//		return val, error_no.ShortLinkExpired
+//	}
+//
+//	// 从数据库中获取
+//	var res T
+//	if res, err = fetchFromDB(); err != nil {
+//		return val, err
+//	}
+//	if res == nil {
+//		// 数据被删除 硬删除/软删除
+//		return val, nil
+//	}
+//
+//	// 写入缓存
+//	var jsonBytes []byte
+//	jsonBytes, err = sonic.Marshal(res)
+//	if err != nil {
+//		return val, err
+//	}
+//	err = q.rdb.SetEx(ctx, cacheKey, string(jsonBytes), expiration).Err()
+//	if err != nil {
+//		return val, err
+//	}
+//
+//	return res, nil
+//}
 
 func (q LinkQuery) PageLink(ctx context.Context, param query.PageLink) (res *types.PageResp[query.Link], err error) {
-	linkPage, err := q.linkDao.PageLink(ctx, param.Gid, constant.StatusEnable, param.OrderTag, param.Current, param.Size)
-
+	linkPage, err := q.linkDao.PageLink(ctx, param.Gid, param.OrderTag, param.Current, param.Size)
 	if err != nil {
 		return
 	}
 
-	res = types.ConvertRecords(linkPage, func(linkDTO dao.LinkDTO) query.Link {
-		var queryLink query.Link
-		err := copier.Copy(&linkDTO, &queryLink)
-		if err != nil {
-			return query.Link{}
+	res = types.ConvertRecords(linkPage, func(dto dao.LinkDTO) (query.Link, error) {
+		lk := query.Link{}
+		if err = copier.Copy(&lk, &dto); err != nil {
+			return query.Link{}, err
 		}
-		return queryLink
+		return lk, nil
 	})
 	return
 }
 
 func (q LinkQuery) ListGroupLinkCount(ctx context.Context, gidList []string) (res []query.GroupLinkCount, err error) {
-	linkGidCountDTO, err := q.linkDao.ListGroupLinkCount(ctx, gidList)
+	linkGidCountDTOs, err := q.linkDao.ListGroupLinkCount(ctx, gidList)
 	if err != nil {
 		return
 	}
 
 	res = make([]query.GroupLinkCount, 0)
-	for _, dto := range linkGidCountDTO {
+	for _, dto := range linkGidCountDTOs {
 		res = append(res, query.GroupLinkCount{
 			Gid:   dto.Gid,
 			Count: dto.Count,
 		})
 	}
+	return
+}
+
+// PageRecycleBin 分页查询回收站中的短链接
+func (q LinkQuery) PageRecycleBin(
+	ctx context.Context,
+	param query.PageRecycleBin,
+) (res *types.PageResp[query.Link], err error) {
+
+	r, err := q.linkDao.PageRecycleBin(ctx, param.GidList, param.Current, param.Size)
+	if err != nil {
+		return
+	}
+
+	res = types.ConvertRecords(r, func(dto dao.LinkDTO) (query.Link, error) {
+		lk := query.Link{}
+		if err = copier.Copy(&lk, &dto); err != nil {
+			return lk, err
+		}
+		return lk, nil
+	})
+
+	return
+}
+
+func (q LinkQuery) GetLinkWithoutStats(ctx context.Context, shortUri string) (lk *link.Link, err error) {
+	linkGotoPo := &po.LinkGoto{}
+	if linkGotoPo, err = q.linkDao.GetLinkGoto(ctx, shortUri); err != nil || linkGotoPo == nil {
+		return
+	}
+	linkPo := &po.Link{}
+	if linkPo, err = q.linkDao.GetLink(ctx, link.Identifier{
+		ShortUri: shortUri, Gid: linkGotoPo.Gid,
+	}); err != nil || linkPo == nil {
+		return
+	}
+
+	// 将持久化对象转换为领域模型
+	lk = &link.Link{}
+	validDate := &link.ValidDate{}
+	if validDate, err = link.NewValidDate(
+		linkPo.ValidType, linkPo.ValidStartDate, linkPo.ValidEndDate,
+	); err != nil {
+		return
+	}
+
+	lk, err = q.linkFactory.NewLinkFromDB(
+		linkPo.ID, linkPo.Gid, linkPo.ShortUri, linkPo.OriginalUrl, linkPo.Status,
+		linkPo.CreateType, linkPo.Favicon, linkPo.Desc, validDate, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	return
 }

@@ -102,7 +102,7 @@ func (r UserRepositoryImpl) Login(ctx context.Context, username string, password
 	}
 	if len(tokens) > 0 {
 		// 重置过期时间
-		if err = r.rdb.Expire(ctx, key, 24*time.Hour).Err(); err != nil {
+		if err = r.rdb.Expire(ctx, key, 30*24*time.Hour).Err(); err != nil {
 			return "", err
 		}
 		return tokens[0], nil
@@ -118,7 +118,7 @@ func (r UserRepositoryImpl) Login(ctx context.Context, username string, password
 	if err = r.rdb.HSet(ctx, key, token, userInfo).Err(); err != nil {
 		return "", err
 	}
-	if err = r.rdb.Expire(ctx, key, 24*time.Hour).Err(); err != nil {
+	if err = r.rdb.Expire(ctx, key, 30*24*time.Hour).Err(); err != nil {
 		return "", err
 	}
 	return token, nil

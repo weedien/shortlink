@@ -4,8 +4,8 @@ import (
 	"context"
 	"gorm.io/gorm"
 	"shortlink/internal/common/types"
-	po2 "shortlink/internal/link/adapter/po"
-	"shortlink/internal/link/domain/entity"
+	"shortlink/internal/link/adapter/po"
+	"shortlink/internal/link/domain/link"
 )
 
 type LinkDao struct {
@@ -16,18 +16,8 @@ func NewLinkDao(db *gorm.DB) LinkDao {
 	return LinkDao{db: db}
 }
 
-//// IncrementStats 短链接访问统计自增
-//func (m *LinkDao) IncrementStats(gid string, param.FullShortUrl string, totalPv int, totalUv int, totalUip int) error {
-//	rawSql := `
-//UPDATE t_link
-//SET total_pv = total_pv + ?, total_uv = total_uv + ?, total_uip = total_uip + ?
-//WHERE gid = ? AND full_short_url = ?;
-//`
-//	return m.db.Exec(rawSql, totalPv, totalUv, totalUip, gid, param.FullShortUrl).Error
-//}
-
 type LinkDTO struct {
-	po2.Link
+	po.Link
 	TodayPv  int `json:"todayPv"`
 	TodayUv  int `json:"todayUv"`
 	TodayUip int `json:"todayUip"`
@@ -38,19 +28,19 @@ type LinkGidCountDTO struct {
 	Count int    `json:"count"`
 }
 
-func (d *LinkDao) GetLink(ctx context.Context, id entity.LinkID) (po2.Link, error) {
-	var link po2.Link
+func (d *LinkDao) GetLink(ctx context.Context, id link.Identifier) (*po.Link, error) {
+	lk := &po.Link{}
 	err := d.db.WithContext(ctx).
-		Where("full_short_url = ? AND gid = ? AND enable_status = 0 AND del_flag = false", id.FullShortUrl, id.Gid).
-		First(&link).Error
-	return link, err
+		Where("full_short_url = ? AND gid = ? AND status = 0", id.ShortUri, id.Gid).
+		First(lk).Error
+	return lk, err
 }
 
-func (d *LinkDao) GetLinkGoto(ctx context.Context, fullShortUrl string) (po2.LinkGoto, error) {
-	var linkGoto po2.LinkGoto
+func (d *LinkDao) GetLinkGoto(ctx context.Context, fullShortUrl string) (*po.LinkGoto, error) {
+	var linkGoto *po.LinkGoto
 	err := d.db.WithContext(ctx).
 		Where("full_short_url = ?", fullShortUrl).
-		First(&linkGoto).Error
+		First(linkGoto).Error
 	return linkGoto, err
 
 }
@@ -61,7 +51,7 @@ func (d *LinkDao) ListGroupLinkCount(ctx context.Context, gidList []string) (res
 		Table("link").
 		Select("gid, COUNT(*) AS count").
 		Where("gid IN ?", gidList).
-		Where("enable_status = 0 AND del_flag = false").
+		Where("status = 0").
 		Group("gid").
 		Find(&res).Error
 	return
@@ -71,7 +61,6 @@ func (d *LinkDao) ListGroupLinkCount(ctx context.Context, gidList []string) (res
 func (d *LinkDao) PageLink(
 	ctx context.Context,
 	gid string,
-	enableStatus int,
 	orderTag string,
 	page int,
 	size int,
@@ -80,7 +69,7 @@ func (d *LinkDao) PageLink(
 SELECT t.*, COALESCE(s.today_pv, 0) AS todayPv, COALESCE(s.today_uv, 0) AS todayUv, COALESCE(s.today_uip, 0) AS todayUip
 FROM t_link t
 LEFT JOIN t_link_stats_today s ON t.full_short_url = s.full_short_url AND s.date = current_date
-WHERE t.gid = ? AND t.enable_status = ? AND t.del_flag = 0
+WHERE t.gid = ? AND t.status = ? AND t.delete_time is null
 ORDER BY 
     CASE 
         WHEN ? = 'todayPv' THEN todayPv
@@ -96,14 +85,14 @@ LIMIT ? OFFSET ?;
 
 	var records []LinkDTO
 	err = d.db.WithContext(ctx).
-		Raw(rawSql, gid, enableStatus, orderTag, orderTag, orderTag, orderTag, orderTag, orderTag, size, (page-1)*size).Scan(&records).Error
+		Raw(rawSql, gid, orderTag, orderTag, orderTag, orderTag, orderTag, orderTag, size, (page-1)*size).Scan(&records).Error
 	if err != nil {
 		return
 	}
 
 	var total int64
 	err = d.db.WithContext(ctx).
-		Model(&po2.Link{}).Where("gid = ? AND enable_status = ? AND del_flag = 0", gid, enableStatus).Count(&total).Error
+		Model(&po.Link{}).Where("gid = ? AND delete_time is null", gid).Count(&total).Error
 	if err != nil {
 		return
 	}
@@ -117,8 +106,8 @@ LIMIT ? OFFSET ?;
 	return
 }
 
-// PageDisabledLink 分页统计回收站短链接
-func (d *LinkDao) PageDisabledLink(
+// PageRecycleBin 分页统计回收站短链接
+func (d *LinkDao) PageRecycleBin(
 	ctx context.Context,
 	gidList []string,
 	page int,
@@ -128,7 +117,7 @@ func (d *LinkDao) PageDisabledLink(
 SELECT t.*, COALESCE(s.today_pv, 0) AS todayPv, COALESCE(s.today_uv, 0) AS todayUv, COALESCE(s.today_uip, 0) AS todayUip
 FROM t_link t
 LEFT JOIN t_link_stats_today s ON t.full_short_url = s.full_short_url AND s.date = current_date
-WHERE t.gid IN (?) AND t.enable_status = 1 AND t.del_flag = 0
+WHERE t.gid IN (?) AND t.status = 1
 ORDER BY t.update_time
 LIMIT ? OFFSET ?;
 `
@@ -142,7 +131,7 @@ LIMIT ? OFFSET ?;
 
 	var total int64
 	err = d.db.WithContext(ctx).
-		Model(&po2.Link{}).Where("gid IN (?) AND enable_status = 1 AND del_flag = 0", gidList).Count(&total).Error
+		Model(&po.Link{}).Where("gid IN (?) AND enable_status = 1 AND del_flag = 0", gidList).Count(&total).Error
 	if err != nil {
 		return nil, err
 	}

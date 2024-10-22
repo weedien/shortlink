@@ -9,34 +9,34 @@ import (
 	"shortlink/internal/link_stats/trigger/http/dto/resp"
 )
 
-type ShortLinkStatsApi struct {
+type ShortLinkStatApi struct {
 	app app.Application
 }
 
-func NewShortLinkStatsApi(app app.Application, router fiber.Router) {
-	api := &ShortLinkStatsApi{
+func NewShortLinkStatApi(app app.Application, router fiber.Router) {
+	api := &ShortLinkStatApi{
 		app: app,
 	}
 
 	// 访问单个短链接指定时间内监控数据
-	router.Get("/stats", api.GetLinkStats)
+	router.Get("/stats", api.GetLinkStat)
 	// 访问分组短链接指定时间内监控数据
-	router.Get("/stats/group", api.GroupLinkStats)
+	router.Get("/stats/group", api.GroupLinkStat)
 	// 访问单个短链接指定时间内访问记录监控数据
-	router.Get("/stats/access-record", api.GetLinkStatsAccessRecord)
+	router.Get("/stats/access-record", api.GetLinkStatAccessRecord)
 	// 访问分组短链接指定时间内访问记录监控数据
-	router.Get("/stats/access-record/group", api.GroupLinkStatsAccessRecord)
+	router.Get("/stats/access-record/group", api.GroupLinkStatAccessRecord)
 }
 
-// GetLinkStats 获取短链接统计信息
-func (h ShortLinkStatsApi) GetLinkStats(c *fiber.Ctx) error {
+// GetLinkStat 获取短链接统计信息
+func (h ShortLinkStatApi) GetLinkStat(c *fiber.Ctx) error {
 
-	var reqParam req.ShortLinkStatsReq
+	var reqParam req.ShortLinkStatReq
 	if err := c.QueryParser(&reqParam); err != nil {
 		return err
 	}
 
-	res, err := h.app.Queries.GetLinkStats.Handle(c.Context(), query.GetLinkStats{
+	res, err := h.app.Queries.GetLinkStat.Handle(c.Context(), query.GetLinkStat{
 		FullShortUrl: reqParam.FullShortUrl,
 		Gid:          reqParam.Gid,
 		StartDate:    reqParam.StartTime,
@@ -47,7 +47,7 @@ func (h ShortLinkStatsApi) GetLinkStats(c *fiber.Ctx) error {
 		return err
 	}
 
-	var response resp.ShortLinkStatsResp
+	var response resp.ShortLinkStatResp
 	if err = copier.Copy(&response, &res); err != nil {
 		return err
 	}
@@ -55,15 +55,15 @@ func (h ShortLinkStatsApi) GetLinkStats(c *fiber.Ctx) error {
 	return c.JSON(res)
 }
 
-// GroupLinkStats 分组获取短链接统计信息
-func (h ShortLinkStatsApi) GroupLinkStats(c *fiber.Ctx) error {
+// GroupLinkStat 分组获取短链接统计信息
+func (h ShortLinkStatApi) GroupLinkStat(c *fiber.Ctx) error {
 
-	var reqParam req.ShortLinkGroupStatsReq
+	var reqParam req.ShortLinkGroupStatReq
 	if err := c.QueryParser(&reqParam); err != nil {
 		return err
 	}
 
-	res, err := h.app.Queries.GroupLinkStats.Handle(c.Context(), query.GroupLinkStats{
+	res, err := h.app.Queries.GroupLinkStat.Handle(c.Context(), query.GroupLinkStat{
 		Gid:       reqParam.Gid,
 		StartDate: reqParam.StartTime,
 		EndDate:   reqParam.EndTime,
@@ -72,7 +72,7 @@ func (h ShortLinkStatsApi) GroupLinkStats(c *fiber.Ctx) error {
 		return err
 	}
 
-	var response resp.ShortLinkStatsResp
+	var response resp.ShortLinkStatResp
 	if err = copier.Copy(&response, &res); err != nil {
 		return err
 	}
@@ -80,15 +80,15 @@ func (h ShortLinkStatsApi) GroupLinkStats(c *fiber.Ctx) error {
 	return c.JSON(res)
 }
 
-// GetLinkStatsAccessRecord 获取短链接访问记录
-func (h ShortLinkStatsApi) GetLinkStatsAccessRecord(c *fiber.Ctx) error {
+// GetLinkStatAccessRecord 获取短链接访问记录
+func (h ShortLinkStatApi) GetLinkStatAccessRecord(c *fiber.Ctx) error {
 
-	var reqParam req.ShortLinkStatsAccessRecordReq
+	var reqParam req.ShortLinkStatAccessRecordReq
 	if err := c.QueryParser(&reqParam); err != nil {
 		return err
 	}
 
-	res, err := h.app.Queries.GetLinkStatsAccessRecord.Handle(c.Context(), query.GetLinkStatsAccessRecord{
+	res, err := h.app.Queries.GetLinkStatAccessRecord.Handle(c.Context(), query.GetLinkStatAccessRecord{
 		PageReq:      reqParam.PageReq,
 		FullShortUrl: reqParam.FullShortUrl,
 		Gid:          reqParam.Gid,
@@ -100,7 +100,7 @@ func (h ShortLinkStatsApi) GetLinkStatsAccessRecord(c *fiber.Ctx) error {
 		return err
 	}
 
-	var response resp.ShortLinkStatsAccessRecordResp
+	var response resp.ShortLinkStatAccessRecordResp
 	if err = copier.Copy(&response, &res); err != nil {
 		return err
 	}
@@ -108,15 +108,15 @@ func (h ShortLinkStatsApi) GetLinkStatsAccessRecord(c *fiber.Ctx) error {
 	return c.JSON(res)
 }
 
-// GroupLinkStatsAccessRecord 分组获取短链接访问记录
-func (h ShortLinkStatsApi) GroupLinkStatsAccessRecord(c *fiber.Ctx) error {
+// GroupLinkStatAccessRecord 分组获取短链接访问记录
+func (h ShortLinkStatApi) GroupLinkStatAccessRecord(c *fiber.Ctx) error {
 
-	var reqParam req.ShortLinkGroupStatsAccessRecordReq
+	var reqParam req.ShortLinkGroupStatAccessRecordReq
 	if err := c.QueryParser(&reqParam); err != nil {
 		return err
 	}
 
-	res, err := h.app.Queries.GroupLinkStatsAccessRecord.Handle(c.Context(), query.GroupLinkStatsAccessRecord{
+	res, err := h.app.Queries.GroupLinkStatAccessRecord.Handle(c.Context(), query.GroupLinkStatAccessRecord{
 		PageReq:   reqParam.PageReq,
 		Gid:       reqParam.Gid,
 		StartDate: reqParam.StartTime,
@@ -126,7 +126,7 @@ func (h ShortLinkStatsApi) GroupLinkStatsAccessRecord(c *fiber.Ctx) error {
 		return err
 	}
 
-	var response resp.ShortLinkStatsAccessRecordResp
+	var response resp.ShortLinkStatAccessRecordResp
 	if err = copier.Copy(&response, &res); err != nil {
 		return err
 	}

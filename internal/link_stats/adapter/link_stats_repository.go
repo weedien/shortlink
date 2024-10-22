@@ -9,23 +9,21 @@ import (
 	"shortlink/internal/common/constant"
 	"shortlink/internal/common/lock"
 	"shortlink/internal/common/toolkit"
-	po2 "shortlink/internal/link/adapter/po"
 	"shortlink/internal/link/domain/valobj"
-	po3 "shortlink/internal/link_stats/adapter/po"
-	"shortlink/internal/user/adapter/po"
+	"shortlink/internal/link_stats/adapter/po"
 )
 
-type LinkStatsRepository struct {
+type LinkStatRepository struct {
 	db     *gorm.DB
 	rdb    *redis.Client
 	locker lock.DistributedLock
 }
 
-func NewLinkStatsRepository(db *gorm.DB, rdb *redis.Client) LinkStatsRepository {
-	return LinkStatsRepository{db: db, rdb: rdb}
+func NewLinkStatRepository(db *gorm.DB, rdb *redis.Client) LinkStatRepository {
+	return LinkStatRepository{db: db, rdb: rdb}
 }
 
-func (r LinkStatsRepository) SaveLinkStats(ctx context.Context, statsInfo valobj.ShortLinkStatsRecordVo) error {
+func (r LinkStatRepository) SaveLinkStat(ctx context.Context, statsInfo valobj.ShortLinkStatsRecordVo) error {
 	lockKey := constant.LockGidUpdateKey + statsInfo.FullShortUrl
 	if _, err := r.locker.Acquire(ctx, lockKey, -1); err != nil {
 		return err
@@ -44,26 +42,26 @@ func (r LinkStatsRepository) SaveLinkStats(ctx context.Context, statsInfo valobj
 	// 访问统计
 	// 确定两个值的信息，uvFirstFlag 和 uipFirstFlag
 	uv, uip := 0, 0
-	uvAdded, err := r.rdb.SAdd(ctx, constant.ShortLinkStatsUvKey+fullShortUrl, statsInfo.UV).Result()
+	uvAdded, err := r.rdb.SAdd(ctx, constant.ShortLinkStatUvKey+fullShortUrl, statsInfo.UV).Result()
 	if err != nil {
 		return err
 	}
 	if uvAdded > 0 {
 		uv = 1
 	}
-	uipAdded, err := r.rdb.SAdd(ctx, constant.ShortLinkStatsUipKey+fullShortUrl, statsInfo.RemoteAddr).Result()
+	uipAdded, err := r.rdb.SAdd(ctx, constant.ShortLinkStatUipKey+fullShortUrl, statsInfo.RemoteAddr).Result()
 	if err != nil {
 		return err
 	}
 	if uipAdded > 0 {
 		uip = 1
 	}
-	linkAccessStatsPo := po.LinkAccessStats{
+	linkAccessStatPo := po.LinkAccessStat{
 		Pv:           1,
 		Uv:           uv,
 		Uip:          uip,
 		Hour:         hour,
-		Weekday:      weekDay,
+		Week:         weekDay,
 		FullShortUrl: fullShortUrl,
 		Date:         currentDate,
 	}
@@ -74,11 +72,11 @@ func (r LinkStatsRepository) SaveLinkStats(ctx context.Context, statsInfo valobj
 			"uv":  gorm.Expr("uv + ?", uv),
 			"uip": gorm.Expr("uip + ?", uip),
 		}),
-	}).Create(&linkAccessStatsPo).Error; err != nil {
+	}).Create(&linkAccessStatPo).Error; err != nil {
 		return err
 	}
 	// 今日统计
-	linkStatsToday := po3.LinkStatsToday{
+	linkStatToday := po.LinkStatToday{
 		TodayPv:      1,
 		TodayUv:      uv,
 		TodayUip:     uip,
@@ -92,12 +90,12 @@ func (r LinkStatsRepository) SaveLinkStats(ctx context.Context, statsInfo valobj
 			"today_uv":  gorm.Expr("today_uv + ?", uv),
 			"today_uip": gorm.Expr("today_uip + ?", uip),
 		}),
-	}).Create(&linkStatsToday).Error; err != nil {
+	}).Create(&linkStatToday).Error; err != nil {
 		return err
 	}
 	// 地区信息
 	location := toolkit.GetLocationByIP(statsInfo.RemoteAddr)
-	linkLocaleStatsPo := po.LinkLocaleStats{
+	linkLocaleStatPo := po.LinkLocaleStat{
 		FullShortUrl: fullShortUrl,
 		Date:         currentDate,
 		Cnt:          1,
@@ -108,11 +106,11 @@ func (r LinkStatsRepository) SaveLinkStats(ctx context.Context, statsInfo valobj
 	if err := r.db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "full_short_url"}, {Name: "date"}, {Name: "province"}},
 		DoUpdates: clause.Assignments(map[string]interface{}{"cnt": gorm.Expr("cnt + ?", 1)}),
-	}).Create(&linkLocaleStatsPo).Error; err != nil {
+	}).Create(&linkLocaleStatPo).Error; err != nil {
 		return err
 	}
 	// 操作系统信息
-	linkOsStatsPo := po.LinkOsStats{
+	linkOsStatPo := po.LinkOsStat{
 		Os:           statsInfo.OS,
 		Cnt:          1,
 		FullShortUrl: fullShortUrl,
@@ -121,11 +119,11 @@ func (r LinkStatsRepository) SaveLinkStats(ctx context.Context, statsInfo valobj
 	if err := r.db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "os"}, {Name: "full_short_url"}, {Name: "date"}},
 		DoUpdates: clause.Assignments(map[string]interface{}{"cnt": gorm.Expr("cnt + ?", 1)}),
-	}).Create(&linkOsStatsPo).Error; err != nil {
+	}).Create(&linkOsStatPo).Error; err != nil {
 		return err
 	}
 	// 浏览器信息
-	linkBrowserStatsPo := po.LinkBrowserStats{
+	linkBrowserStatPo := po.LinkBrowserStat{
 		Browser:      statsInfo.Browser,
 		Cnt:          1,
 		FullShortUrl: fullShortUrl,
@@ -134,11 +132,11 @@ func (r LinkStatsRepository) SaveLinkStats(ctx context.Context, statsInfo valobj
 	if err := r.db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "browser"}, {Name: "full_short_url"}, {Name: "date"}},
 		DoUpdates: clause.Assignments(map[string]interface{}{"cnt": gorm.Expr("cnt + ?", 1)}),
-	}).Create(&linkBrowserStatsPo).Error; err != nil {
+	}).Create(&linkBrowserStatPo).Error; err != nil {
 		return err
 	}
 	// 设备信息
-	linkDeviceStatsPo := po.LinkDeviceStats{
+	linkDeviceStatPo := po.LinkDeviceStat{
 		Device:       statsInfo.Device,
 		Cnt:          1,
 		FullShortUrl: fullShortUrl,
@@ -147,11 +145,11 @@ func (r LinkStatsRepository) SaveLinkStats(ctx context.Context, statsInfo valobj
 	if err := r.db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "device"}, {Name: "full_short_url"}, {Name: "date"}},
 		DoUpdates: clause.Assignments(map[string]interface{}{"cnt": gorm.Expr("cnt + ?", 1)}),
-	}).Create(&linkDeviceStatsPo).Error; err != nil {
+	}).Create(&linkDeviceStatPo).Error; err != nil {
 		return err
 	}
 	// 网络信息
-	linkNetworkStatsPo := po.LinkNetworkStats{
+	linkNetworkStatPo := po.LinkNetworkStat{
 		Network:      statsInfo.Network,
 		Cnt:          1,
 		FullShortUrl: fullShortUrl,
@@ -160,11 +158,11 @@ func (r LinkStatsRepository) SaveLinkStats(ctx context.Context, statsInfo valobj
 	if err := r.db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "network"}, {Name: "full_short_url"}, {Name: "date"}},
 		DoUpdates: clause.Assignments(map[string]interface{}{"cnt": gorm.Expr("cnt + ?", 1)}),
-	}).Create(&linkNetworkStatsPo).Error; err != nil {
+	}).Create(&linkNetworkStatPo).Error; err != nil {
 		return err
 	}
 	// 访问日志
-	linkAccessLogPo := po3.LinkAccessLog{
+	linkAccessLogPo := po.LinkAccessLog{
 		FullShortUrl: fullShortUrl,
 		User:         statsInfo.UV,
 		IP:           statsInfo.RemoteAddr,
@@ -178,11 +176,11 @@ func (r LinkStatsRepository) SaveLinkStats(ctx context.Context, statsInfo valobj
 		return err
 	}
 	// 更新shortLink表中的状态pv, uv, uip
-	linkGotoPo := po2.LinkGoto{FullShortUrl: fullShortUrl}
+	linkGotoPo := po.LinkGoto{FullShortUrl: fullShortUrl}
 	if err := r.db.First(&linkGotoPo).Error; err != nil {
 		return err
 	}
-	r.db.Model(&po2.Link{}).
+	r.db.Model(&po.Link{}).
 		Where("gid = ? and full_short_url = ?", linkGotoPo.Gid, fullShortUrl).
 		Updates(map[string]interface{}{
 			"total_pv":  gorm.Expr("total_pv + ?", 1),

@@ -2,6 +2,7 @@ package query
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"shortlink/internal/common/decorator"
 	"shortlink/internal/common/metrics"
@@ -36,7 +37,16 @@ type PageLink struct {
 	// 分组ID
 	Gid string
 	// 排序标识
+	// 取值为: todayPv, todayUv, todayUip, totalPv, totalUv, totalUip
+	// 默认为 create_time
 	OrderTag string
+}
+
+func (pl PageLink) validate() error {
+	if pl.Gid == "" {
+		return errors.New("gid is required")
+	}
+	return nil
 }
 
 type PageLinkReadModel interface {

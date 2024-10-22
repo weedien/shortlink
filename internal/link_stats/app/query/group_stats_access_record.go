@@ -9,29 +9,29 @@ import (
 	"time"
 )
 
-type groupLinkStatsAccessRecordHandler struct {
-	readModel GroupLinkStatsAccessRecordReadModel
+type groupLinkStatAccessRecordHandler struct {
+	readModel GroupLinkStatAccessRecordReadModel
 }
 
-type GroupLinkStatsAccessRecordHandler decorator.QueryHandler[GroupLinkStatsAccessRecord, *types.PageResp[LinkStatsAccessRecord]]
+type GroupLinkStatAccessRecordHandler decorator.QueryHandler[GroupLinkStatAccessRecord, *types.PageResp[LinkStatAccessRecord]]
 
-func NewGroupLinkStatsAccessRecordHandler(
-	readModel GroupLinkStatsAccessRecordReadModel,
+func NewGroupLinkStatAccessRecordHandler(
+	readModel GroupLinkStatAccessRecordReadModel,
 	logger *slog.Logger,
 	metricsClient metrics.Client,
-) GroupLinkStatsAccessRecordHandler {
+) GroupLinkStatAccessRecordHandler {
 	if readModel == nil {
 		panic("nil readModel")
 	}
 
-	return decorator.ApplyQueryDecorators[GroupLinkStatsAccessRecord, *types.PageResp[LinkStatsAccessRecord]](
-		groupLinkStatsAccessRecordHandler{readModel},
+	return decorator.ApplyQueryDecorators[GroupLinkStatAccessRecord, *types.PageResp[LinkStatAccessRecord]](
+		groupLinkStatAccessRecordHandler{readModel},
 		logger,
 		metricsClient,
 	)
 }
 
-type GroupLinkStatsAccessRecord struct {
+type GroupLinkStatAccessRecord struct {
 	// 分页参数
 	types.PageReq
 	// 分组ID
@@ -42,11 +42,11 @@ type GroupLinkStatsAccessRecord struct {
 	EndDate time.Time
 }
 
-type GroupLinkStatsAccessRecordReadModel interface {
-	// GroupLinkStatsAccessRecord 获取分组指定时间内访问记录监控数据
-	GroupLinkStatsAccessRecord(ctx context.Context, param GroupLinkStatsAccessRecord) (*types.PageResp[LinkStatsAccessRecord], error)
+type GroupLinkStatAccessRecordReadModel interface {
+	// GroupLinkStatAccessRecord 获取分组指定时间内访问记录监控数据
+	GroupLinkStatAccessRecord(ctx context.Context, param GroupLinkStatAccessRecord) (*types.PageResp[LinkStatAccessRecord], error)
 }
 
-func (h groupLinkStatsAccessRecordHandler) Handle(ctx context.Context, q GroupLinkStatsAccessRecord) (*types.PageResp[LinkStatsAccessRecord], error) {
-	return h.readModel.GroupLinkStatsAccessRecord(ctx, q)
+func (h groupLinkStatAccessRecordHandler) Handle(ctx context.Context, q GroupLinkStatAccessRecord) (*types.PageResp[LinkStatAccessRecord], error) {
+	return h.readModel.GroupLinkStatAccessRecord(ctx, q)
 }

@@ -2,6 +2,7 @@ package lock
 
 import (
 	"context"
+	"errors"
 	"github.com/bsm/redislock"
 	"github.com/redis/go-redis/v9"
 	"time"
@@ -15,27 +16,35 @@ func NewRedisLock(rdb *redis.Client) RedisLock {
 	return RedisLock{locker: redislock.New(rdb)}
 }
 
-var Locks = map[string]*redislock.Lock{}
+var locks = map[string]*redislock.Lock{}
 
 func (r RedisLock) Acquire(ctx context.Context, key string, expiration time.Duration) (bool, error) {
-	obtain, err := r.locker.Obtain(ctx, key, expiration, nil)
-	if err != nil {
+	// 每1000ms重试一次 重试3次
+	backoff := redislock.LimitRetry(redislock.LinearBackoff(1000*time.Millisecond), 3)
+	lock, err := r.locker.Obtain(ctx, key, expiration, &redislock.Options{
+		RetryStrategy: backoff,
+	})
+	if errors.Is(err, redislock.ErrNotObtained) {
+		// 锁被占用 获取失败
+		return false, nil
+	} else if err != nil {
+		// redis 异常
 		return false, err
 	}
-	Locks[key] = obtain
+	locks[key] = lock
 	return true, nil
 }
 
 func (r RedisLock) Release(ctx context.Context, key string) error {
-	if err := Locks[key].Release(ctx); err != nil {
+	if err := locks[key].Release(ctx); err != nil {
 		return err
 	}
-	delete(Locks, key)
+	delete(locks, key)
 	return nil
 }
 
 func (r RedisLock) Refresh(ctx context.Context, key string, expiration time.Duration) (bool, error) {
-	if err := Locks[key].Refresh(ctx, expiration, nil); err != nil {
+	if err := locks[key].Refresh(ctx, expiration, nil); err != nil {
 		return false, err
 	}
 	return true, nil

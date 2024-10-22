@@ -9,18 +9,18 @@ import (
 	"shortlink/internal/link_stats/repo/readrepo"
 )
 
-func NewShortLinkStatsApplication(db *gorm.DB) app.Application {
+func NewShortLinkStatApplication(db *gorm.DB) app.Application {
 
 	logger := slog.Default()
 	metricsClient := metrics.NoOp{}
-	readModel := readrepo.NewLinkStatsQuery(db)
+	readModel := readrepo.NewLinkStatQuery(db)
 
 	return app.Application{
 		Queries: app.Queries{
-			GetLinkStats:               query.NewGetLinkStatsHandler(readModel, logger, metricsClient),
-			GroupLinkStats:             query.NewGroupLinkStatsHandler(readModel, logger, metricsClient),
-			GetLinkStatsAccessRecord:   query.NewGetLinkStatsAccessRecordHandler(readModel, logger, metricsClient),
-			GroupLinkStatsAccessRecord: query.NewGroupLinkStatsAccessRecordHandler(readModel, logger, metricsClient),
+			GetLinkStat:               query.NewGetLinkStatHandler(readModel, logger, metricsClient),
+			GroupLinkStat:             query.NewGroupLinkStatHandler(readModel, logger, metricsClient),
+			GetLinkStatAccessRecord:   query.NewGetLinkStatAccessRecordHandler(readModel, logger, metricsClient),
+			GroupLinkStatAccessRecord: query.NewGroupLinkStatAccessRecordHandler(readModel, logger, metricsClient),
 		},
 	}
 }

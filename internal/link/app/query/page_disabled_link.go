@@ -12,7 +12,7 @@ type pageRecycleBinHandler struct {
 	readModel PageRecycleBinReadModel
 }
 
-type PageRecycleBinHandler decorator.QueryHandler[PageRecycleBin, *types.PageResp[LinkQueryDTO]]
+type PageRecycleBinHandler decorator.QueryHandler[PageRecycleBin, *types.PageResp[Link]]
 
 func NewPageRecycleBinHandler(
 	readModel PageRecycleBinReadModel,
@@ -23,7 +23,7 @@ func NewPageRecycleBinHandler(
 		panic("nil readModel")
 	}
 
-	return decorator.ApplyQueryDecorators[PageRecycleBin, *types.PageResp[LinkQueryDTO]](
+	return decorator.ApplyQueryDecorators[PageRecycleBin, *types.PageResp[Link]](
 		pageRecycleBinHandler{readModel},
 		logger,
 		metricsClient,
@@ -37,9 +37,9 @@ type PageRecycleBin struct {
 }
 
 type PageRecycleBinReadModel interface {
-	PageDisabledLink(ctx context.Context, param PageRecycleBin) (*types.PageResp[LinkQueryDTO], error)
+	PageRecycleBin(ctx context.Context, param PageRecycleBin) (*types.PageResp[Link], error)
 }
 
-func (h pageRecycleBinHandler) Handle(ctx context.Context, cmd PageRecycleBin) (*types.PageResp[LinkQueryDTO], error) {
-	return h.readModel.PageDisabledLink(ctx, cmd)
+func (h pageRecycleBinHandler) Handle(ctx context.Context, cmd PageRecycleBin) (*types.PageResp[Link], error) {
+	return h.readModel.PageRecycleBin(ctx, cmd)
 }

@@ -10,7 +10,7 @@ import (
 	"shortlink/internal/link/app"
 	"shortlink/internal/link/app/command"
 	"shortlink/internal/link/app/query"
-	"shortlink/internal/link/domain/valobj"
+	"shortlink/internal/link/domain/link"
 	"shortlink/internal/link/trigger/http/dto/req"
 	"shortlink/internal/link/trigger/http/dto/resp"
 	"strings"
@@ -51,7 +51,7 @@ func (h ShortLinkApi) Redirect(c *fiber.Ctx) error {
 
 	shortUri := c.Params("short-uri")
 	if shortUri == "" {
-		return error_no.ShortLinkNotFound
+		return error_no.ShortLinkNotExists
 	}
 
 	os, browser, device, network := toolkit.GetRequestInfo(c)
@@ -66,7 +66,8 @@ func (h ShortLinkApi) Redirect(c *fiber.Ctx) error {
 		})
 	}
 
-	recordInfo := valobj.ShortLinkStatsRecordVo{
+	userVisitInfo := link.UserVisitInfo{
+		ShortUri:    shortUri,
 		RemoteAddr:  c.IP(),
 		OS:          os,
 		Browser:     browser,
@@ -77,8 +78,8 @@ func (h ShortLinkApi) Redirect(c *fiber.Ctx) error {
 	}
 
 	q := query.GetOriginalUrl{
-		FullShortUrl: fmt.Sprintf("https://%s/%s", c.BaseUrl(), shortUri),
-		RecordInfo:   recordInfo,
+		ShortUri:      fmt.Sprintf("https://%s/%s", c.BaseURL(), shortUri),
+		UserVisitInfo: userVisitInfo,
 	}
 
 	// 获取原始链接
@@ -88,7 +89,7 @@ func (h ShortLinkApi) Redirect(c *fiber.Ctx) error {
 	}
 
 	if originalUrl == "" {
-		return error_no.ShortLinkNotFound
+		return error_no.ShortLinkNotExists
 	}
 
 	return c.Redirect(originalUrl)
@@ -103,13 +104,13 @@ func (h ShortLinkApi) CreateShortLink(c *fiber.Ctx) (err error) {
 	}
 
 	cmd := command.CreateLink{
-		OriginalUrl:   reqParam.OriginalUrl,
-		Gid:           reqParam.Gid,
-		CreateType:    reqParam.CreateType,
-		ValidDateType: reqParam.ValidDateType,
-		ValidDate:     reqParam.ValidDate,
-		Description:   reqParam.Description,
-		WithLock:      false,
+		OriginalUrl:  reqParam.OriginalUrl,
+		Gid:          reqParam.Gid,
+		CreateType:   reqParam.CreateType,
+		ValidType:    reqParam.ValidDateType,
+		ValidEndDate: reqParam.ValidDate,
+		Desc:         reqParam.Description,
+		WithLock:     false,
 	}
 
 	if err = h.app.Commands.CreateLink.Handle(c.Context(), cmd); err != nil {
@@ -136,13 +137,13 @@ func (h ShortLinkApi) CreateShortLinkWithLock(c *fiber.Ctx) (err error) {
 	}
 
 	cmd := command.CreateLink{
-		OriginalUrl:   reqParam.OriginalUrl,
-		Gid:           reqParam.Gid,
-		CreateType:    reqParam.CreateType,
-		ValidDateType: reqParam.ValidDateType,
-		ValidDate:     reqParam.ValidDate,
-		Description:   reqParam.Description,
-		WithLock:      true,
+		OriginalUrl:  reqParam.OriginalUrl,
+		Gid:          reqParam.Gid,
+		CreateType:   reqParam.CreateType,
+		ValidType:    reqParam.ValidDateType,
+		ValidEndDate: reqParam.ValidDate,
+		Desc:         reqParam.Description,
+		WithLock:     true,
 	}
 
 	if err = h.app.Commands.CreateLink.Handle(c.Context(), cmd); err != nil {
@@ -169,12 +170,13 @@ func (h ShortLinkApi) BatchCreateShortLink(c *fiber.Ctx) error {
 	}
 
 	cmd := command.CreateLinkBatch{
-		OriginUrls:    reqParam.OriginalUrls,
-		Descriptions:  reqParam.Descriptions,
-		Gid:           reqParam.Gid,
-		CreateType:    reqParam.CreateType,
-		ValidDateType: reqParam.ValidDateType,
-		ValidDate:     reqParam.ValidDate,
+		OriginalUrls:   reqParam.OriginalUrls,
+		Descs:          reqParam.Descriptions,
+		Gid:            reqParam.Gid,
+		CreateType:     reqParam.CreateType,
+		ValidType:      reqParam.ValidDateType,
+		ValidStartDate: reqParam.StartDate,
+		ValidEndDate:   reqParam.EndDate,
 	}
 
 	if err := h.app.Commands.CreateLinkBatch.Handle(c.Context(), cmd); err != nil {
@@ -201,13 +203,15 @@ func (h ShortLinkApi) UpdateShortLink(c *fiber.Ctx) error {
 	}
 
 	err := h.app.Commands.UpdateLink.Handle(c.Context(), command.UpdateLink{
-		FullShortUrl:  reqParam.FullShortUrl,
-		OriginalUrl:   reqParam.OriginUrl,
-		OriginalGid:   reqParam.OriginGid,
-		Gid:           reqParam.Gid,
-		ValidDateType: reqParam.ValidDateType,
-		ValidDate:     reqParam.ValidDate,
-		Description:   reqParam.Description,
+		FullShortUrl:   reqParam.FullShortUrl,
+		OriginalUrl:    reqParam.OriginUrl,
+		OriginalGid:    reqParam.OriginGid,
+		Gid:            reqParam.Gid,
+		Status:         reqParam.Status,
+		ValidType:      reqParam.ValidType,
+		ValidStartDate: reqParam.StartDate,
+		ValidEndDate:   reqParam.EndDate,
+		Desc:           reqParam.Description,
 	})
 	if err != nil {
 		return err

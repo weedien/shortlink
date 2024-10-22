@@ -170,14 +170,14 @@ GROUP BY
 	return result, err
 }
 
-type PvUvUidStatsDTO struct {
+type PvUvUidStatDTO struct {
 	Pv  int `json:"pv"`
 	Uv  int `json:"uv"`
 	Uip int `json:"uip"`
 }
 
-// FindPvUvUidStatsByLink 根据短链接获取指定日期内PV、UV、UIP数据
-func (d LinkAccessLogsDao) FindPvUvUidStatsByLink(ctx context.Context, param LinkQueryParam) (PvUvUidStatsDTO, error) {
+// FindPvUvUidStatByLink 根据短链接获取指定日期内PV、UV、UIP数据
+func (d LinkAccessLogsDao) FindPvUvUidStatByLink(ctx context.Context, param LinkQueryParam) (PvUvUidStatDTO, error) {
 	rawSql := `
 SELECT 
     COUNT(tlal.user) AS pv, 
@@ -195,7 +195,7 @@ WHERE
 GROUP BY 
     tlal.full_short_url, tl.gid;
 `
-	var result PvUvUidStatsDTO
+	var result PvUvUidStatDTO
 	err := d.db.WithContext(ctx).
 		Raw(rawSql, param.FullShortUrl, param.Gid, param.EnableStatus, param.StartDate, param.EndDate).Scan(&result).Error
 	return result, err
@@ -240,8 +240,8 @@ LIMIT ? OFFSET ?;
 	}, nil
 }
 
-// FindPvUvUidStatsByGroup 根据分组获取指定日期内PV、UV、UIP数据
-func (d LinkAccessLogsDao) FindPvUvUidStatsByGroup(ctx context.Context, param LinkGroupQueryParam) (PvUvUidStatsDTO, error) {
+// FindPvUvUidStatByGroup 根据分组获取指定日期内PV、UV、UIP数据
+func (d LinkAccessLogsDao) FindPvUvUidStatByGroup(ctx context.Context, param LinkGroupQueryParam) (PvUvUidStatDTO, error) {
 	rawSql := `
 SELECT 
     COUNT(tlal.user) AS pv, 
@@ -258,7 +258,7 @@ WHERE
 GROUP BY 
     tl.gid;
 `
-	var result PvUvUidStatsDTO
+	var result PvUvUidStatDTO
 	err := d.db.WithContext(ctx).
 		Raw(rawSql, param.Gid, param.EnableStatus, param.StartDate, param.EndDate).Scan(&result).Error
 	return result, err

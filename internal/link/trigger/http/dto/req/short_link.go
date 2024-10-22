@@ -35,8 +35,10 @@ type ShortLinkBatchCreateReq struct {
 	CreateType int `json:"create_type" validate:"required"`
 	// 有效期类型 0:永久有效 1:自定义有效期
 	ValidDateType int `json:"valid_date_type" validate:"required"`
-	// 有效期
-	ValidDate time.Time `json:"valid_date" validate:"required" format:"2006-01-02 15:04:05"`
+	// 有效期 - 开始时间
+	StartDate time.Time `json:"start_date" validate:"required" format:"2006-01-02 15:04:05"`
+	// 有效期 - 结束时间
+	EndDate time.Time `json:"end_date" validate:"required" format:"2006-01-02 15:04:05"`
 }
 
 // ShortLinkUpdateReq 更新短链接请求
@@ -49,16 +51,20 @@ type ShortLinkUpdateReq struct {
 	OriginGid string `json:"origin_gid" validate:"required"`
 	// 分组ID
 	Gid string `json:"gid" validate:"required"`
+	// 状态
+	Status string `json:"status" validate:"required"`
 	// 有效期类型 0:永久有效 1:自定义有效期
-	ValidDateType int `json:"valid_date_type" validate:"required"`
-	// 有效期
-	ValidDate time.Time `json:"valid_date" validate:"required" format:"2006-01-02 15:04:05"`
+	ValidType int `json:"valid_date_type" validate:"required"`
+	// 有效期 - 开始时间
+	StartDate time.Time `json:"start_date" validate:"required" format:"2006-01-02 15:04:05"`
+	// 有效期 - 结束时间
+	EndDate time.Time `json:"end_date" validate:"required" format:"2006-01-02 15:04:05"`
 	// 描述
 	Description string `json:"description" validate:"required"`
 }
 
-// ShortLinkGroupStatsAccessRecordReq 分组短链接监控访问记录请求
-type ShortLinkGroupStatsAccessRecordReq struct {
+// ShortLinkGroupStatAccessRecordReq 分组短链接监控访问记录请求
+type ShortLinkGroupStatAccessRecordReq struct {
 	// 分页参数
 	types.PageReq `json:",inline" validate:"required"`
 	// 分组ID
@@ -69,8 +75,8 @@ type ShortLinkGroupStatsAccessRecordReq struct {
 	EndTime time.Time `json:"end_time" validate:"required" format:"2006-01-02 15:04:05"`
 }
 
-// ShortLinkGroupStatsReq 分组短链接监控请求
-type ShortLinkGroupStatsReq struct {
+// ShortLinkGroupStatReq 分组短链接监控请求
+type ShortLinkGroupStatReq struct {
 	// 分组ID
 	Gid string `json:"gid" validate:"required"`
 	// 开始时间
@@ -89,8 +95,8 @@ type ShortLinkPageReq struct {
 	OrderTag string `json:"order_tag" validate:"required"`
 }
 
-// ShortLinkStatsAccessRecordReq 短链接监控访问记录请求
-type ShortLinkStatsAccessRecordReq struct {
+// ShortLinkStatAccessRecordReq 短链接监控访问记录请求
+type ShortLinkStatAccessRecordReq struct {
 	// 分页参数
 	types.PageReq `json:",inline" validate:"required"`
 	// 完整短链接
@@ -105,8 +111,8 @@ type ShortLinkStatsAccessRecordReq struct {
 	EnableStatus int `json:"enable_status" validate:"required"`
 }
 
-// ShortLinkStatsReq 短链接监控请求
-type ShortLinkStatsReq struct {
+// ShortLinkStatReq 短链接监控请求
+type ShortLinkStatReq struct {
 	// 完整短链接
 	FullShortUrl string `json:"full_short_url" validate:"required"`
 	// 分组标识

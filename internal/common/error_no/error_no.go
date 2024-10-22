@@ -82,11 +82,11 @@ var (
 	ShortLinkDuplicateInsert = ErrorCode{Code: 30006, Desc: "短链接重复插入"}
 	FaviconGetFailed         = ErrorCode{Code: 30101, Desc: "获取网站图标失败"}
 
-	ShortLinkNotExists    = ErrorCode{Code: 30007, Desc: "短链接不存在"}
+	//ShortLinkNotExists    = ErrorCode{Code: 30007, Desc: "短链接不存在"}
 	ShortLinkUpdateFailed = ErrorCode{Code: 30008, Desc: "短链接更新失败"}
 
 	DatabaseError     = ErrorCode{Code: 40001, Desc: "数据库错误"}
 	RedisConnectError = ErrorCode{Code: 40000, Desc: "Redis连接错误"}
-	RedisError        = ErrorCode{Code: 40001, Desc: "Redis错误"}
-	RocketMQError     = ErrorCode{Code: 40002, Desc: "RocketMQ错误"}
+	//RedisError        = ErrorCode{Code: 40001, Desc: "Redis错误"}
+	RocketMQError = ErrorCode{Code: 40002, Desc: "RocketMQ错误"}
 )

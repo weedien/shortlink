@@ -4,20 +4,21 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"shortlink/internal/common/cache"
 	"shortlink/internal/common/constant"
 	"shortlink/internal/common/decorator"
 	"shortlink/internal/common/lock"
 	"shortlink/internal/common/metrics"
 	"shortlink/internal/link/domain"
-	"shortlink/internal/link/domain/aggregate"
-	"shortlink/internal/link/domain/entity"
-	"shortlink/internal/link/domain/valobj"
+	"shortlink/internal/link/domain/link"
 	"time"
 )
 
 type createLinkHandler struct {
-	repo   domain.LinkRepository
-	locker lock.DistributedLock
+	repo             domain.LinkRepository
+	locker           lock.DistributedLock
+	linkFactory      *link.Factory
+	distributedCache cache.DistributedCache
 }
 
 type CreateLink struct {
@@ -28,24 +29,33 @@ type CreateLink struct {
 	// 创建类型 0:接口创建 1:控制台创建
 	CreateType int
 	// 有效期类型 0:永久有效 1:自定义有效期
-	ValidDateType int
-	// 有效期
-	ValidDate time.Time
+	ValidType int
+	// 有效期 - 开始时间
+	ValidStartDate time.Time
+	// 有效期 - 结束时间
+	ValidEndDate time.Time
 	// 描述
-	Description string
+	Desc string
 	// 是否加锁
 	WithLock bool
 	// 执行结果
-	result *valobj.ShortLinkCreateVo
+	result *CreateLinkResult
 }
 
-func (c CreateLink) ExecutionResult() *valobj.ShortLinkCreateVo {
+type CreateLinkResult struct {
+	Gid          string
+	FullShortUrl string
+	OriginalUrl  string
+}
+
+func (c CreateLink) ExecutionResult() *CreateLinkResult {
 	return c.result
 }
 
 type CreateLinkHandler decorator.CommandHandler[CreateLink]
 
 func NewCreateLinkHandler(
+	linkFactory *link.Factory,
 	repo domain.LinkRepository,
 	locker lock.DistributedLock,
 	logger *slog.Logger,
@@ -59,7 +69,7 @@ func NewCreateLinkHandler(
 	}
 
 	return decorator.ApplyCommandDecorators[CreateLink](
-		createLinkHandler{repo: repo, locker: locker},
+		createLinkHandler{repo: repo, locker: locker, linkFactory: linkFactory},
 		logger,
 		metrics,
 	)
@@ -73,53 +83,43 @@ func (h createLinkHandler) Handle(
 	// 获取分布式锁
 	if cmd.WithLock {
 		lockKey := fmt.Sprintf(constant.ShortLinkCreateLockKey, cmd.OriginalUrl)
-		if _, err = h.locker.Acquire(ctx, lockKey, time.Second); err != nil {
-			return err
+		if _, err = h.locker.Acquire(ctx, lockKey, constant.DefaultTimeOut); err != nil {
+			return
 		}
 		defer func() {
-			if err := h.locker.Release(ctx, lockKey); err != nil {
-				err = fmt.Errorf("释放锁异常: %w", err)
+			if releaseErr := h.locker.Release(ctx, lockKey); releaseErr != nil {
+				err = fmt.Errorf("释放锁异常: %w", releaseErr)
 			}
 		}()
 	}
 
+	// todo 开始时间
+
 	// 创建短链接实体
-	linkEntity, err := entity.NewLink(
-		cmd.OriginalUrl,
-		cmd.Gid,
-		cmd.CreateType,
-		cmd.ValidDateType,
-		cmd.ValidDate,
-		cmd.Description,
+	lk := &link.Link{}
+	lk, err = h.linkFactory.NewAvailableLink(
+		cmd.OriginalUrl, cmd.Gid, cmd.CreateType, cmd.ValidType, cmd.ValidEndDate, cmd.Desc,
+		func(shortUri string) (exists bool, err error) {
+			if exists, err = h.repo.ShortUriExists(ctx, shortUri); err != nil {
+				return exists, err
+			}
+			return exists, nil
+		},
 	)
 	if err != nil {
 		return
 	}
 
-	// 生成唯一短链接
-	err = linkEntity.GenUniqueShortUri(10, func(shortUri string) bool {
-		exists, err := h.repo.ShortUriExists(ctx, shortUri)
-		if err != nil {
-			return true
-		}
-		return exists
-	})
-	if err != nil {
-		return
-	}
-
 	// 持久化短链接
-	linkGoto := entity.NewLinkGoto(cmd.Gid, linkEntity.FullShortUrl())
-	linkAggregate := aggregate.NewCreateLinkAggregate(linkEntity, linkGoto)
-
-	if err = h.repo.CreateLink(ctx, linkAggregate); err != nil {
+	if err = h.repo.CreateLink(ctx, lk); err != nil {
 		return
 	}
 
-	cmd.result = &valobj.ShortLinkCreateVo{
-		FullShortUrl: linkEntity.FullShortUrl(),
-		OriginalUrl:  cmd.OriginalUrl,
+	// 返回结果
+	cmd.result = &CreateLinkResult{
 		Gid:          cmd.Gid,
+		FullShortUrl: lk.FullShortUrl(),
+		OriginalUrl:  cmd.OriginalUrl,
 	}
 	return
 }

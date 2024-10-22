@@ -9,30 +9,30 @@ import (
 	"time"
 )
 
-// getLinkStatsAccessRecordHandler 获取单个短链接指定时间内访问记录监控数据
-type getLinkStatsAccessRecordHandler struct {
-	readModel GetLinkStatsAccessRecordReadModel
+// getLinkStatAccessRecordHandler 获取单个短链接指定时间内访问记录监控数据
+type getLinkStatAccessRecordHandler struct {
+	readModel GetLinkStatAccessRecordReadModel
 }
 
-type GetLinkStatsAccessRecordHandler decorator.QueryHandler[GetLinkStatsAccessRecord, *types.PageResp[LinkStatsAccessRecord]]
+type GetLinkStatAccessRecordHandler decorator.QueryHandler[GetLinkStatAccessRecord, *types.PageResp[LinkStatAccessRecord]]
 
-func NewGetLinkStatsAccessRecordHandler(
-	readModel GetLinkStatsAccessRecordReadModel,
+func NewGetLinkStatAccessRecordHandler(
+	readModel GetLinkStatAccessRecordReadModel,
 	logger *slog.Logger,
 	metricsClient metrics.Client,
-) GetLinkStatsAccessRecordHandler {
+) GetLinkStatAccessRecordHandler {
 	if readModel == nil {
 		panic("nil readModel")
 	}
 
-	return decorator.ApplyQueryDecorators[GetLinkStatsAccessRecord, *types.PageResp[LinkStatsAccessRecord]](
-		getLinkStatsAccessRecordHandler{readModel},
+	return decorator.ApplyQueryDecorators[GetLinkStatAccessRecord, *types.PageResp[LinkStatAccessRecord]](
+		getLinkStatAccessRecordHandler{readModel},
 		logger,
 		metricsClient,
 	)
 }
 
-type GetLinkStatsAccessRecord struct {
+type GetLinkStatAccessRecord struct {
 	types.PageReq
 	// 完整短链接
 	FullShortUrl string
@@ -46,11 +46,11 @@ type GetLinkStatsAccessRecord struct {
 	EnableStatus int
 }
 
-type GetLinkStatsAccessRecordReadModel interface {
-	// GetLinkStatsAccessRecord 获取单个短链接指定时间内访问记录监控数据
-	GetLinkStatsAccessRecord(ctx context.Context, param GetLinkStatsAccessRecord) (*types.PageResp[LinkStatsAccessRecord], error)
+type GetLinkStatAccessRecordReadModel interface {
+	// GetLinkStatAccessRecord 获取单个短链接指定时间内访问记录监控数据
+	GetLinkStatAccessRecord(ctx context.Context, param GetLinkStatAccessRecord) (*types.PageResp[LinkStatAccessRecord], error)
 }
 
-func (h getLinkStatsAccessRecordHandler) Handle(ctx context.Context, query GetLinkStatsAccessRecord) (d *types.PageResp[LinkStatsAccessRecord], err error) {
-	return h.readModel.GetLinkStatsAccessRecord(ctx, query)
+func (h getLinkStatAccessRecordHandler) Handle(ctx context.Context, query GetLinkStatAccessRecord) (d *types.PageResp[LinkStatAccessRecord], err error) {
+	return h.readModel.GetLinkStatAccessRecord(ctx, query)
 }

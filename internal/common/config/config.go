@@ -28,6 +28,8 @@ var (
 	DomainWhiteList      = configWithDefault{"DOMAIN_WHITE_LIST", ""}
 	DomainWhiteListNames = configWithDefault{"DOMAIN_WHITE_LIST_NAMES", "掘金,知乎,简书,博客园,CSDN,开源中国,SegmentFault,思否,博客,博客园,博客园首页,博客首页,博客园博客"}
 	DefaultFavicon       = configWithDefault{"DEFAULT_FAVICON", "https://cdn.jsdelivr.net/gh/weedien/shortlink@main/static/favicon.ico"}
+	UseSSL               = configWithDefault{"USE_SSL", "false"}
+	MaxAttempts          = configWithDefault{"MAX_ATTEMPTS", "10"}
 )
 
 func (c configWithDefault) String() string {

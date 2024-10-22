@@ -10,46 +10,24 @@ type GroupLinkCount struct {
 }
 
 type Link struct {
-	ID            int
-	Domain        string
-	ShortUri      string
-	FullShortUrl  string
-	OriginalUrl   string
-	ClickNum      int
-	Gid           string
-	EnableStatus  int
-	CreateType    int
-	ValidDateType int
-	ValidDate     time.Time
-	Desc          string
-	Favicon       string
-	TotalPv       int
-	TotalUv       int
-	TotalUip      int
-	TodayPv       int
-	TodayUv       int
-	TodayUip      int
-}
-
-type LinkQueryDTO struct {
-	ID            int
-	Domain        string
-	ShortUri      string
-	FullShortUrl  string
-	OriginalUrl   string
-	ClickNum      int
-	Gid           string
-	EnableStatus  int
-	CreateType    int
-	ValidDateType int
-	ValidDate     time.Time
-	Desc          string
-	CreateTime    time.Time
-	Favicon       string
-	TotalPv       int
-	TotalUv       int
-	TotalUip      int
-	TodayPv       int
-	TodayUv       int
-	TodayUip      int
+	ID             int
+	Domain         string
+	ShortUri       string
+	FullShortUrl   string
+	OriginalUrl    string
+	Gid            string
+	Status         int
+	CreateType     int
+	ValidType      int
+	ValidStartDate time.Time
+	ValidEndDate   time.Time
+	Desc           string
+	Favicon        string
+	ClickNum       int
+	TotalPv        int
+	TotalUv        int
+	TotalUip       int
+	TodayPv        int
+	TodayUv        int
+	TodayUip       int
 }

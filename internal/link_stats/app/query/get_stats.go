@@ -8,29 +8,29 @@ import (
 	"time"
 )
 
-type getLinkStatsHandler struct {
-	readModel GetLinkStatsReadModel
+type getLinkStatHandler struct {
+	readModel GetLinkStatReadModel
 }
 
-type GetLinkStatsHandler decorator.QueryHandler[GetLinkStats, *LinkStats]
+type GetLinkStatHandler decorator.QueryHandler[GetLinkStat, *LinkStat]
 
-func NewGetLinkStatsHandler(
-	readModel GetLinkStatsReadModel,
+func NewGetLinkStatHandler(
+	readModel GetLinkStatReadModel,
 	logger *slog.Logger,
 	metricsClient metrics.Client,
-) GetLinkStatsHandler {
+) GetLinkStatHandler {
 	if readModel == nil {
 		panic("nil readModel")
 	}
 
-	return decorator.ApplyQueryDecorators[GetLinkStats, *LinkStats](
-		getLinkStatsHandler{readModel},
+	return decorator.ApplyQueryDecorators[GetLinkStat, *LinkStat](
+		getLinkStatHandler{readModel},
 		logger,
 		metricsClient,
 	)
 }
 
-type GetLinkStats struct {
+type GetLinkStat struct {
 	// 完整短链接
 	FullShortUrl string
 	// 分组ID
@@ -43,11 +43,11 @@ type GetLinkStats struct {
 	EnableStatus int
 }
 
-type GetLinkStatsReadModel interface {
-	// GetLinkStats 获取单个短链接监控数据
-	GetLinkStats(ctx context.Context, param GetLinkStats) (res *LinkStats, err error)
+type GetLinkStatReadModel interface {
+	// GetLinkStat 获取单个短链接监控数据
+	GetLinkStat(ctx context.Context, param GetLinkStat) (res *LinkStat, err error)
 }
 
-func (h getLinkStatsHandler) Handle(ctx context.Context, q GetLinkStats) (res *LinkStats, err error) {
-	return h.readModel.GetLinkStats(ctx, q)
+func (h getLinkStatHandler) Handle(ctx context.Context, q GetLinkStat) (res *LinkStat, err error) {
+	return h.readModel.GetLinkStat(ctx, q)
 }

@@ -16,8 +16,8 @@ func NewRecordLinkVisitListener(repo domain.Repository) RecordLinkVisitListener 
 }
 
 func (h RecordLinkVisitListener) Process(ctx context.Context, e base_event.Event) error {
-	if ve, ok := e.(event.RecordLinkVisitEvent); ok {
-		return h.repo.SaveLinkStats(ctx, ve.RecordInfo)
+	if ve, ok := e.(event.UserVisitEvent); ok {
+		return h.repo.SaveLinkStat(ctx, ve.visitInfo)
 	}
 	return nil
 }

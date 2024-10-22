@@ -7,8 +7,10 @@ import (
 	"shortlink/internal/common/config"
 )
 
+var rdb *redis.Client
+
 func ConnectToRedis() *redis.Client {
-	rdb := redis.NewClient(&redis.Options{
+	rdb = redis.NewClient(&redis.Options{
 		Addr:     config.RedisAddr.String(),
 		Password: config.RedisPassword.String(),
 		DB:       config.RedisDB.Int(),

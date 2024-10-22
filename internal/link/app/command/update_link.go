@@ -3,11 +3,10 @@ package command
 import (
 	"context"
 	"log/slog"
-	"shortlink/internal/common/constant"
 	"shortlink/internal/common/decorator"
 	"shortlink/internal/common/metrics"
 	"shortlink/internal/link/domain"
-	"shortlink/internal/link/domain/entity"
+	"shortlink/internal/link/domain/link"
 	"time"
 )
 
@@ -42,27 +41,31 @@ type UpdateLink struct {
 	OriginalGid string
 	// 分组ID
 	Gid string
+	// 状态
+	Status string
 	// 有效期类型 0:永久有效 1:自定义有效期
-	ValidDateType int
-	// 有效期
-	ValidDate time.Time
+	ValidType int
+	// 有效期 - 开始时间
+	ValidStartDate time.Time
+	// 有效期 - 结束时间
+	ValidEndDate time.Time
 	// 描述
-	Description string
+	Desc string
 }
 
 func (h updateLinkHandler) Handle(ctx context.Context, cmd UpdateLink) (err error) {
 	return h.repo.UpdateLink(
 		ctx,
-		entity.LinkID{
-			FullShortUrl: cmd.FullShortUrl,
-			Gid:          cmd.OriginalGid,
+		link.Identifier{
+			ShortUri: cmd.FullShortUrl,
+			Gid:      cmd.OriginalGid,
 		},
-		constant.StatusEnable,
-		func(ctx context.Context, link *entity.Link) (*entity.Link, error) {
-			link.SetGid(cmd.Gid).SetOriginalUrl(cmd.OriginalUrl).
-				SetDesc(cmd.Description).SetValidDateType(cmd.ValidDateType).
-				SetValidDate(cmd.ValidDate)
-			return link, nil
+		func(ctx context.Context, lk *link.Link) (*link.Link, error) {
+			err = lk.Update(&cmd.Gid, &cmd.OriginalUrl, &cmd.Status, &cmd.ValidType, &cmd.ValidEndDate, &cmd.Desc)
+			if err != nil {
+				return nil, err
+			}
+			return lk, nil
 		},
 	)
 }

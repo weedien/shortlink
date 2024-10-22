@@ -2,9 +2,9 @@ package domain
 
 import (
 	"context"
-	"shortlink/internal/link/domain/valobj"
+	"shortlink/internal/link_stats/domain/event"
 )
 
 type Repository interface {
-	SaveLinkStats(ctx context.Context, statsInfo valobj.ShortLinkStatsRecordVo) error
+	SaveLinkStat(ctx context.Context, statsInfo event.UserVisitInfo) error
 }

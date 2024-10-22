@@ -2,17 +2,23 @@ package query
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"reflect"
 	"shortlink/internal/common/base_event"
+	"shortlink/internal/common/cache"
+	"shortlink/internal/common/constant"
 	"shortlink/internal/common/decorator"
+	"shortlink/internal/common/error_no"
 	"shortlink/internal/common/metrics"
 	"shortlink/internal/link/app/event"
-	"shortlink/internal/link/domain/valobj"
+	"shortlink/internal/link/domain/link"
 )
 
 type getOriginalUrlHandler struct {
-	readModel GetOriginalUrlReadModel
-	eventBus  base_event.EventBus
+	readModel        GetOriginalUrlReadModel
+	eventBus         base_event.EventBus
+	distributedCache cache.DistributedCache
 }
 
 type GetOriginalUrlHandler decorator.QueryHandler[GetOriginalUrl, string]
@@ -35,20 +41,62 @@ func NewGetOriginalUrlHandler(
 }
 
 type GetOriginalUrl struct {
-	FullShortUrl string
-	RecordInfo   valobj.ShortLinkStatsRecordVo
+	ShortUri      string
+	UserVisitInfo link.UserVisitInfo
 }
 
 type GetOriginalUrlReadModel interface {
-	// GetOriginalUrlByShortUrl 通过短链接获取原始链接
-	GetOriginalUrlByShortUrl(ctx context.Context, fullShortUrl string) (string, error)
+	GetLinkWithoutStats(ctx context.Context, shortUri string) (*link.Link, error)
 }
 
-func (h getOriginalUrlHandler) Handle(ctx context.Context, q GetOriginalUrl) (string, error) {
+func (h getOriginalUrlHandler) Handle(ctx context.Context, q GetOriginalUrl) (res string, err error) {
 
-	// $$ 发布事件 LinkAccessEvent
-	e := event.NewLinkAccessedEvent(q.RecordInfo)
+	// $$ 发布事件 UserVisitEvent
+	e := event.NewUserVisitEvent(q.UserVisitInfo)
 	h.eventBus.Publish(ctx, e)
 
-	return h.readModel.GetOriginalUrlByShortUrl(ctx, q.FullShortUrl)
+	fetchFn := func() (res interface{}, err error) {
+		lk := &link.Link{}
+		if lk, err = h.readModel.GetLinkWithoutStats(ctx, q.ShortUri); err != nil || lk == nil {
+			return
+		}
+		originalUrl := lk.OriginalUrl()
+		if originalUrl == "" {
+			err = error_no.ShortLinkNotExists
+			return
+		}
+		switch lk.Status() {
+		case link.StatusActive:
+			res = originalUrl
+			return
+		case link.StatusExpired:
+			err = error_no.ShortLinkExpired
+			return
+		case link.StatusForbidden:
+			err = error_no.ShortLinkForbidden
+			return
+		case link.StatusReserved:
+			err = error_no.ShortLinkReserved
+			return
+		default:
+			err = error_no.ShortLinkNotExists
+			return
+		}
+	}
+
+	var result interface{}
+	result, err = h.distributedCache.SafeGetWithCacheCheckFilter(
+		ctx,
+		constant.GotoShortLinkKey+q.ShortUri,
+		reflect.TypeOf(""),
+		fetchFn,
+		constant.NeverExpire,
+		cache.ShortUriCreateBloomFilter,
+		fmt.Sprintf(constant.GotoIsNullShortLinkKey, q.ShortUri),
+	)
+	if err != nil {
+		return
+	}
+	res = result.(string)
+	return
 }

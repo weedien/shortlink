@@ -28,7 +28,7 @@ BEGIN
                     -- Create a new sequence
                     EXECUTE format('CREATE SEQUENCE %I.%I', schema_name, seq_name);
 
-                    -- Set default value for the id column to the next value of the new sequence
+                    -- Set default originalUrl for the id column to the next originalUrl of the new sequence
                     EXECUTE format('ALTER TABLE %I.%I ALTER COLUMN %I SET DEFAULT nextval(%L)',
                                    schema_name, table_record.table_name, column_record.column_name,
                                    schema_name || '.' || seq_name);
@@ -38,7 +38,7 @@ BEGIN
                                    schema_name, seq_name, schema_name, table_record.table_name,
                                    column_record.column_name);
 
-                    -- Optionally, set the sequence to start from the max id value to avoid conflicts
+                    -- Optionally, set the sequence to start from the max id originalUrl to avoid conflicts
                     EXECUTE format('SELECT setval(%L, COALESCE(MAX(%I), 0) + 1, false) FROM %I.%I',
                                    schema_name || '.' || seq_name, column_record.column_name, schema_name,
                                    table_record.table_name);

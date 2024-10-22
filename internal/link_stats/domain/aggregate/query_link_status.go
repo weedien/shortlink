@@ -2,21 +2,21 @@ package aggregate
 
 import "shortlink/internal/link_stats/domain/valobj"
 
-type LinkStatsAggregate struct {
+type LinkStatAggregate struct {
 	// 入参
 	params valobj.ShortLinkSimpleVO
 
 	// 出参
-	result *valobj.ShortLinkStats
+	result *valobj.ShortLinkStat
 
 	// 异常
 	err error
 }
 
-func NewLinkStatsAggregate(params valobj.ShortLinkSimpleVO) *LinkStatsAggregate {
-	return &LinkStatsAggregate{params: params}
+func NewLinkStatAggregate(params valobj.ShortLinkSimpleVO) *LinkStatAggregate {
+	return &LinkStatAggregate{params: params}
 }
 
-func (a LinkStatsAggregate) Result() (*valobj.ShortLinkStats, error) {
+func (a LinkStatAggregate) Result() (*valobj.ShortLinkStat, error) {
 	return a.result, a.err
 }

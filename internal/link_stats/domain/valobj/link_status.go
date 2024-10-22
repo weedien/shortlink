@@ -15,8 +15,8 @@ type ShortLinkSimpleVO struct {
 	EnableStatus int
 }
 
-// ShortLinkStats 短链接监控统计
-type ShortLinkStats struct {
+// ShortLinkStat 短链接监控统计
+type ShortLinkStat struct {
 	// PV
 	Pv int `json:"pv"`
 	// UV
@@ -24,29 +24,29 @@ type ShortLinkStats struct {
 	// UIP
 	Uip int `json:"uip"`
 	// 小时访问统计
-	HourStats []ShortLinkStatsAccessBaseVO `json:"hourly"`
+	HourStat []ShortLinkStatAccessBaseVO `json:"hourly"`
 	// 日访问统计
-	Daily []ShortLinkStatsAccessBaseVO `json:"daily"`
+	Daily []ShortLinkStatAccessBaseVO `json:"daily"`
 	// 周访问统计
-	Weekly []ShortLinkStatsAccessBaseVO `json:"weekly"`
+	Weekly []ShortLinkStatAccessBaseVO `json:"weekly"`
 	// 地区访问统计（仅国内）
-	LocationCnStats []ShortLinkStatsLocationVO `json:"locationCnStats"`
+	LocationCnStat []ShortLinkStatLocationVO `json:"locationCnStat"`
 	// 高频访问IP统计
-	TopIpStats []ShortLinkStatsTopIpVO `json:"topIpStats"`
+	TopIpStat []ShortLinkStatTopIpVO `json:"topIpStat"`
 	// 浏览器统计
-	BrowserStats []ShortLinkStatsBrowserVO `json:"browserStats"`
+	BrowserStat []ShortLinkStatBrowserVO `json:"browserStat"`
 	// 操作系统统计
-	OsStats []ShortLinkStatsOsVO `json:"osStats"`
+	OsStat []ShortLinkStatOsVO `json:"osStat"`
 	// 访客类型统计
-	VisitorTypeStats []ShortLinkStatsUvVO `json:"visitorTypeStats"`
+	VisitorTypeStat []ShortLinkStatUvVO `json:"visitorTypeStat"`
 	// 设备统计
-	DeviceStats []ShortLinkStatsDeviceVO `json:"deviceStats"`
+	DeviceStat []ShortLinkStatDeviceVO `json:"deviceStat"`
 	// 网络统计
-	NetworkStats []ShortLinkStatsNetworkVO `json:"networkStats"`
+	NetworkStat []ShortLinkStatNetworkVO `json:"networkStat"`
 }
 
-// ShortLinkStatsAccessBaseVO 短链接监控访问统计基础响应
-type ShortLinkStatsAccessBaseVO struct {
+// ShortLinkStatAccessBaseVO 短链接监控访问统计基础响应
+type ShortLinkStatAccessBaseVO struct {
 	// 日期
 	Date time.Time `json:"date" format:"2006-01-02"`
 	// PV
@@ -57,8 +57,8 @@ type ShortLinkStatsAccessBaseVO struct {
 	Uip int `json:"uip"`
 }
 
-// ShortLinkStatsBrowserVO 浏览器统计响应
-type ShortLinkStatsBrowserVO struct {
+// ShortLinkStatBrowserVO 浏览器统计响应
+type ShortLinkStatBrowserVO struct {
 	// 统计
 	Count int `json:"count"`
 	// 浏览器
@@ -67,8 +67,8 @@ type ShortLinkStatsBrowserVO struct {
 	Ratio float64 `json:"ratio"`
 }
 
-// ShortLinkStatsDeviceVO 设备统计响应
-type ShortLinkStatsDeviceVO struct {
+// ShortLinkStatDeviceVO 设备统计响应
+type ShortLinkStatDeviceVO struct {
 	// 统计
 	Count int `json:"count"`
 	// 设备
@@ -77,8 +77,8 @@ type ShortLinkStatsDeviceVO struct {
 	Ratio float64 `json:"ratio"`
 }
 
-// ShortLinkStatsLocationVO 地区统计响应
-type ShortLinkStatsLocationVO struct {
+// ShortLinkStatLocationVO 地区统计响应
+type ShortLinkStatLocationVO struct {
 	// 统计
 	Count int `json:"count"`
 	// 地区
@@ -87,8 +87,8 @@ type ShortLinkStatsLocationVO struct {
 	Ratio float64 `json:"ratio"`
 }
 
-// ShortLinkStatsNetworkVO 网络统计响应
-type ShortLinkStatsNetworkVO struct {
+// ShortLinkStatNetworkVO 网络统计响应
+type ShortLinkStatNetworkVO struct {
 	// 统计
 	Count int `json:"count"`
 	// 网络
@@ -97,8 +97,8 @@ type ShortLinkStatsNetworkVO struct {
 	Ratio float64 `json:"ratio"`
 }
 
-// ShortLinkStatsOsVO 操作系统统计响应
-type ShortLinkStatsOsVO struct {
+// ShortLinkStatOsVO 操作系统统计响应
+type ShortLinkStatOsVO struct {
 	// 统计
 	Count int `json:"count"`
 	// 操作系统
@@ -107,16 +107,16 @@ type ShortLinkStatsOsVO struct {
 	Ratio float64 `json:"ratio"`
 }
 
-// ShortLinkStatsTopIpVO 短链接高频访问IP统计响应
-type ShortLinkStatsTopIpVO struct {
+// ShortLinkStatTopIpVO 短链接高频访问IP统计响应
+type ShortLinkStatTopIpVO struct {
 	// 统计
 	Count int `json:"count"`
 	// IP
 	Ip string `json:"ip"`
 }
 
-// ShortLinkStatsUvVO 短链接监控访问统计UV响应
-type ShortLinkStatsUvVO struct {
+// ShortLinkStatUvVO 短链接监控访问统计UV响应
+type ShortLinkStatUvVO struct {
 	// 统计
 	Count int `json:"count"`
 	// 访客类型

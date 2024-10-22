@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 )
 
@@ -69,4 +70,18 @@ func getNetworkType(ip string) string {
 		return "WIFI"
 	}
 	return "Mobile"
+}
+
+// IsValidDomain 校验域名是否合法
+// 支持 <ip>:<port> 格式
+func IsValidDomain(domain string) bool {
+	var domainRegex = regexp.MustCompile(
+		`^((?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}|(?:\d{1,3}\.){3}\d{1,3}|localhost)(:\d{1,5})?$`)
+	return domainRegex.MatchString(domain)
+}
+
+// IsValidUrl 校验是否是合法的 URL
+func IsValidUrl(rawUrl string) bool {
+	_, err := url.ParseRequestURI(rawUrl)
+	return err == nil
 }

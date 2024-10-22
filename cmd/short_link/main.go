@@ -34,12 +34,12 @@ func main() {
 
 	// 创建应用服务
 	shortLinkApp := linkservice.NewShortLinkApplication(db, rdb, locker, eventBus)
-	shortLinkStatsApp := linkstatsservice.NewShortLinkStatsApplication(db)
+	shortLinkStatApp := linkstatsservice.NewShortLinkStatApplication(db)
 
 	shutdownServer := server.RunHttpServerOnPort(config.Port.String(), func(router fiber.Router) {
 		server.NewUriTitleApi(router)
 		linktrigger.NewShortLinkApi(shortLinkApp, router)
-		linkstatstrigger.NewShortLinkStatsApi(shortLinkStatsApp, router)
+		linkstatstrigger.NewShortLinkStatApi(shortLinkStatApp, router)
 	})
 
 	c := make(chan os.Signal, 1)

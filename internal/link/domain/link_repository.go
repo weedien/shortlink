@@ -2,30 +2,41 @@ package domain
 
 import (
 	"context"
-	"shortlink/internal/link/domain/aggregate"
-	"shortlink/internal/link/domain/entity"
-	"shortlink/internal/link/domain/valobj"
+	"shortlink/internal/link/domain/link"
 )
 
 type LinkRepository interface {
+	// ShortUriExists 短链接是否存在
 	ShortUriExists(ctx context.Context, shortUrl string) (bool, error)
 
-	CreateLink(ctx context.Context, aggregate aggregate.CreateLinkAggregate) error
+	// CreateLink 创建短链接
+	CreateLink(ctx context.Context, lk *link.Link) error
 
-	//CreateLinkWithLock(ctx context.Context, aggregate aggregate.CreateLinkAggregate) error
+	// CreateLinkBatch 批量创建短链接
+	CreateLinkBatch(ctx context.Context, links []*link.Link) error
 
+	// UpdateLink 更新短链接
 	UpdateLink(
 		ctx context.Context,
-		id entity.LinkID,
-		enableStatus int,
-		updateFn func(ctx context.Context, link *entity.Link) (*entity.Link, error),
+		id link.Identifier,
+		updateFn func(ctx context.Context, link *link.Link) (*link.Link, error),
 	) error
 
-	GetOriginalUrlByShortUrl(
+	// SaveToRecycleBin 保存到回收站
+	SaveToRecycleBin(
 		ctx context.Context,
-		fullShortUrl string,
-		statsInfo valobj.ShortLinkStatsRecordVo,
-	) (string, error)
+		id link.Identifier,
+	) error
 
-	//RecordLinkVisitInfo(ctx context.Context, info valobj.ShortLinkStatsRecordVo) error
+	// RemoveFromRecycleBin 从回收站移除
+	RemoveFromRecycleBin(
+		ctx context.Context,
+		id link.Identifier,
+	) error
+
+	// RecoverFromRecycleBin 恢复回收站
+	RecoverFromRecycleBin(
+		ctx context.Context,
+		id link.Identifier,
+	) error
 }

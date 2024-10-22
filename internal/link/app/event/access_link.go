@@ -2,21 +2,21 @@ package event
 
 import (
 	"shortlink/internal/common/base_event"
-	"shortlink/internal/link/domain/valobj"
+	"shortlink/internal/link/domain/link"
 )
 
-type RecordLinkVisitEvent struct {
+type UserVisitEvent struct {
 	base_event.CommonEvent
-	RecordInfo valobj.ShortLinkStatsRecordVo
+	visitInfo link.UserVisitInfo
 }
 
-func (e RecordLinkVisitEvent) Name() string {
-	return "RecordLinkVisitEvent"
+func (e UserVisitEvent) Name() string {
+	return "UserVisitEvent"
 }
 
-func NewLinkAccessedEvent(recordInfo valobj.ShortLinkStatsRecordVo) RecordLinkVisitEvent {
-	return RecordLinkVisitEvent{
+func NewUserVisitEvent(recordInfo link.UserVisitInfo) UserVisitEvent {
+	return UserVisitEvent{
 		CommonEvent: base_event.NewCommonEvent(),
-		RecordInfo:  recordInfo,
+		visitInfo:   recordInfo,
 	}
 }

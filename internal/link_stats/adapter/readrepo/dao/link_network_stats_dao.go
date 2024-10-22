@@ -3,29 +3,29 @@ package dao
 import (
 	"context"
 	"gorm.io/gorm"
-	"shortlink/internal/user/adapter/po"
+	"shortlink/internal/link_stats/adapter/po"
 )
 
-type LinkNetworkStatsDao struct {
+type LinkNetworkStatDao struct {
 	db *gorm.DB
 }
 
-func NewLinkNetworkStatsDao(db *gorm.DB) LinkNetworkStatsDao {
-	return LinkNetworkStatsDao{db: db}
+func NewLinkNetworkStatDao(db *gorm.DB) LinkNetworkStatDao {
+	return LinkNetworkStatDao{db: db}
 }
 
 //// LinkNetworkState 记录访问网络监控数据
-//func (m *LinkNetworkStatsDao) LinkNetworkState(linkNetworkStats po.LinkNetworkStats) error {
+//func (m *LinkNetworkStatDao) LinkNetworkState(LinkNetworkStat po.LinkNetworkStat) error {
 //	rawSql := `
 //INSERT INTO t_link_network_stats (full_short_url, date, cnt, network, create_time, update_time, del_flag)
 //VALUES (?, ?, ?, ?, NOW(), NOW(), 0)
 //ON DUPLICATE KEY UPDATE cnt = cnt + ?;
 //`
-//	return m.db.Exec(rawSql, linkNetworkStats.FullShortUrl, linkNetworkStats.Date, linkNetworkStats.Cnt, linkNetworkStats.Network, linkNetworkStats.Cnt).Error
+//	return m.db.Exec(rawSql, LinkNetworkStat.ShortUri, LinkNetworkStat.Date, LinkNetworkStat.Cnt, LinkNetworkStat.Network, LinkNetworkStat.Cnt).Error
 //}
 
-// ListNetworkStatsByLink 根据短链接获取指定日期内访问网络监控数据
-func (d *LinkNetworkStatsDao) ListNetworkStatsByLink(ctx context.Context, param LinkQueryParam) ([]po.LinkNetworkStats, error) {
+// ListNetworkStatByLink 根据短链接获取指定日期内访问网络监控数据
+func (d *LinkNetworkStatDao) ListNetworkStatByLink(ctx context.Context, param LinkQueryParam) ([]po.LinkNetworkStat, error) {
 	rawSql := `
 SELECT
     tlns.network,
@@ -42,14 +42,14 @@ WHERE
 GROUP BY
     tlns.full_short_url, tl.gid, tlns.network;
 `
-	var result []po.LinkNetworkStats
+	var result []po.LinkNetworkStat
 	err := d.db.WithContext(ctx).
 		Raw(rawSql, param.FullShortUrl, param.Gid, param.EnableStatus, param.StartDate, param.EndDate).Scan(&result).Error
 	return result, err
 }
 
-// ListNetworkStatsByGroup 根据分组获取指定日期内访问网络监控数据
-func (d *LinkNetworkStatsDao) ListNetworkStatsByGroup(ctx context.Context, param LinkGroupQueryParam) ([]po.LinkNetworkStats, error) {
+// ListNetworkStatByGroup 根据分组获取指定日期内访问网络监控数据
+func (d *LinkNetworkStatDao) ListNetworkStatByGroup(ctx context.Context, param LinkGroupQueryParam) ([]po.LinkNetworkStat, error) {
 	rawSql := `
 SELECT
     tlns.network,
@@ -65,7 +65,7 @@ WHERE
 GROUP BY
     tl.gid, tlns.network;
 `
-	var result []po.LinkNetworkStats
+	var result []po.LinkNetworkStat
 	err := d.db.WithContext(ctx).
 		Raw(rawSql, param.Gid, param.StartDate, param.EndDate).Scan(&result).Error
 	return result, err

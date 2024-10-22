@@ -6,14 +6,13 @@ import (
 	"shortlink/internal/common/decorator"
 	"shortlink/internal/common/metrics"
 	"shortlink/internal/link/domain"
-	"shortlink/internal/link/domain/aggregate"
-	"shortlink/internal/link/domain/entity"
-	"shortlink/internal/link/domain/valobj"
+	"shortlink/internal/link/domain/link"
 	"time"
 )
 
 type createLinkBatchHandler struct {
-	repo domain.LinkRepository
+	repo        domain.LinkRepository
+	linkFactory *link.Factory
 }
 
 type CreateLinkBatchHandler decorator.CommandHandler[CreateLinkBatch]
@@ -23,9 +22,6 @@ func NewCreateLinkBatchHandler(
 	logger *slog.Logger,
 	metricsClient metrics.Client,
 ) CreateLinkBatchHandler {
-	if repo == nil {
-		panic("nil repo")
-	}
 
 	return decorator.ApplyCommandDecorators[CreateLinkBatch](
 		createLinkBatchHandler{repo: repo},
@@ -36,74 +32,71 @@ func NewCreateLinkBatchHandler(
 
 type CreateLinkBatch struct {
 	// 原始链接
-	OriginUrls []string
+	OriginalUrls []string
 	// 描述
-	Descriptions []string
+	Descs []string
 	// 分组ID
 	Gid string
 	// 创建类型 0:接口创建 1:控制台创建
 	CreateType int
 	// 有效期类型 0:永久有效 1:自定义有效期
-	ValidDateType int
-	// 有效期
-	ValidDate time.Time
+	ValidType int
+	// 有效期 - 开始时间
+	ValidStartDate time.Time
+	// 有效期 - 结束时间
+	ValidEndDate time.Time
 	// 执行结果
-	result *valobj.ShortLinkCreateBatchVo
+	result *CreateLinkBatchResult
 }
 
-func (c CreateLinkBatch) ExecutionResult() *valobj.ShortLinkCreateBatchVo {
+type CreateLinkBatchResult struct {
+	SuccessCount int
+	LinkInfos    []CreateLinkResult
+}
+
+func (c CreateLinkBatch) ExecutionResult() *CreateLinkBatchResult {
 	return c.result
 }
 
 func (h createLinkBatchHandler) Handle(
 	ctx context.Context,
 	cmd CreateLinkBatch,
-) error {
+) (err error) {
 
-	var shortLinkRespList []valobj.ShortLinkCreateVo
-	for idx, v := range cmd.OriginUrls {
-		linkEntity, err := entity.NewLink(
-			v,
-			cmd.Gid,
-			cmd.CreateType,
-			cmd.ValidDateType,
-			cmd.ValidDate,
-			cmd.Descriptions[idx],
+	lks := make([]*link.Link, 0, len(cmd.OriginalUrls))
+	linkInfos := make([]CreateLinkResult, 0, len(cmd.OriginalUrls))
+	for idx, originalUrl := range cmd.OriginalUrls {
+		lk := &link.Link{}
+		lk, err = h.linkFactory.NewAvailableLink(
+			originalUrl, cmd.Gid, cmd.CreateType, cmd.ValidType, cmd.ValidEndDate, cmd.Descs[idx],
+			func(shortUri string) (exists bool, err error) {
+				if exists, err = h.repo.ShortUriExists(ctx, shortUri); err != nil {
+					return exists, err
+				}
+				return exists, nil
+			},
 		)
 		if err != nil {
 			return err
 		}
 
-		// 生成唯一短链接
-		err = linkEntity.GenUniqueShortUri(10, func(shortUri string) bool {
-			exists, err := h.repo.ShortUriExists(ctx, shortUri)
-			if err != nil {
-				return true
-			}
-			return exists
-		})
-		if err != nil {
-			return err
-		}
+		lks = append(lks, lk)
 
-		linkGoto := entity.NewLinkGoto(cmd.Gid, linkEntity.FullShortUrl())
-		linkAggregate := aggregate.NewCreateLinkAggregate(linkEntity, linkGoto)
-
-		if err = h.repo.CreateLink(ctx, linkAggregate); err != nil {
-			return err
-		}
-
-		r := valobj.ShortLinkCreateVo{
-			FullShortUrl: linkEntity.FullShortUrl(),
-			OriginalUrl:  v,
+		linkInfos[idx] = CreateLinkResult{
 			Gid:          cmd.Gid,
+			FullShortUrl: lk.FullShortUrl(),
+			OriginalUrl:  originalUrl,
 		}
-		shortLinkRespList = append(shortLinkRespList, r)
 	}
 
-	cmd.result = &valobj.ShortLinkCreateBatchVo{
-		SuccessCount: len(shortLinkRespList),
-		LinkInfos:    shortLinkRespList,
+	if err = h.repo.CreateLinkBatch(ctx, lks); err != nil {
+		return err
 	}
+
+	cmd.result = &CreateLinkBatchResult{
+		SuccessCount: len(linkInfos),
+		LinkInfos:    linkInfos,
+	}
+
 	return nil
 }

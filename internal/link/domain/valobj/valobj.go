@@ -1,72 +1,8 @@
 package valobj
 
 import (
-	"shortlink/internal/common/types"
 	"time"
 )
-
-type ShortLinkCreateVo struct {
-	FullShortUrl string
-	OriginalUrl  string
-	Gid          string
-}
-
-type ShortLinkCreateBatchVo struct {
-	// 成功数量
-	SuccessCount int
-	// 批量创建返回参数
-	LinkInfos []ShortLinkCreateVo
-}
-
-// ShortLinkQueryVo 这两个字段能确定一个唯一的短链
-type ShortLinkQueryVo struct {
-	Gid          string
-	FullShortUrl string
-}
-
-type ShortLinkUpdateVo struct {
-	// 完整短链接
-	FullShortLink string
-	// 原始链接
-	OriginalUrl string
-	// 原始分组ID
-	OriginalGid string
-	// 分组ID
-	Gid string
-	// 有效期类型 0:永久有效 1:自定义有效期
-	ValidDateType int
-	// 有效期
-	ValidDate time.Time
-	// 描述
-	Description string
-}
-
-func (v ShortLinkUpdateVo) GidChanged() bool {
-	return v.OriginalGid != v.Gid
-}
-
-type ShortLinkPageQueryVO struct {
-	// 分页请求
-	types.PageReq
-	// 分组ID
-	Gid string
-	// 排序标识
-	OrderTag string
-}
-
-type ShortLinkPageRespVO struct {
-	// 分页数据
-	types.PageResp[ShortLinkQueryVo]
-}
-
-type TodayStatsVo struct {
-	// 今日PV
-	TodayPv int
-	// 今日UV
-	TodayUv int
-	// 今日UIP
-	TodayUip int
-}
 
 type ShortLinkStatsRecordVo struct {
 	// 完整短链接

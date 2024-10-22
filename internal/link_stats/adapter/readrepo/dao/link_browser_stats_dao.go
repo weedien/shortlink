@@ -3,29 +3,29 @@ package dao
 import (
 	"context"
 	"gorm.io/gorm"
-	"shortlink/internal/user/adapter/po"
+	"shortlink/internal/link_stats/adapter/po"
 )
 
-type LinkBrowserStatsDao struct {
+type LinkBrowserStatDao struct {
 	db *gorm.DB
 }
 
-func NewLinkBrowserStatsDao(db *gorm.DB) LinkBrowserStatsDao {
-	return LinkBrowserStatsDao{db: db}
+func NewLinkBrowserStatDao(db *gorm.DB) LinkBrowserStatDao {
+	return LinkBrowserStatDao{db: db}
 }
 
 //// LinkBrowserState 记录浏览器访问监控数据
-//func (m *LinkBrowserStatsDao) LinkBrowserState(linkBrowserStats po.LinkBrowserStats) error {
+//func (m *LinkBrowserStatDao) LinkBrowserState(LinkBrowserStat po.LinkBrowserStat) error {
 //	rawSql := `
 //INSERT INTO t_link_browser_stats (full_short_url, date, cnt, browser, create_time, update_time, del_flag)
 //VALUES (?, ?, ?, ?, NOW(), NOW(), 0)
 //ON DUPLICATE KEY UPDATE cnt = cnt + ?;
 //`
-//	return m.db.Exec(rawSql, linkBrowserStats.FullShortUrl, linkBrowserStats.Date, linkBrowserStats.Cnt, linkBrowserStats.Browser, linkBrowserStats.Cnt).Error
+//	return m.db.Exec(rawSql, LinkBrowserStat.ShortUri, LinkBrowserStat.Date, LinkBrowserStat.Cnt, LinkBrowserStat.Browser, LinkBrowserStat.Cnt).Error
 //}
 
-// ListBrowserStatsByLink 根据短链接获取指定日期内浏览器监控数据
-func (d *LinkBrowserStatsDao) ListBrowserStatsByLink(ctx context.Context, param LinkQueryParam) ([]po.LinkBrowserStats, error) {
+// ListBrowserStatByLink 根据短链接获取指定日期内浏览器监控数据
+func (d *LinkBrowserStatDao) ListBrowserStatByLink(ctx context.Context, param LinkQueryParam) ([]po.LinkBrowserStat, error) {
 	rawSql := `
 SELECT
     tlbs.browser,
@@ -42,14 +42,14 @@ WHERE
 GROUP BY
     tlbs.full_short_url, tl.gid, tlbs.browser;
 `
-	var result []po.LinkBrowserStats
+	var result []po.LinkBrowserStat
 	err := d.db.WithContext(ctx).
 		Raw(rawSql, param.FullShortUrl, param.Gid, param.EnableStatus, param.StartDate, param.EndDate).Scan(&result).Error
 	return result, err
 }
 
-// ListBrowserStatsByGroup 根据分组获取指定日期内浏览器监控数据
-func (d *LinkBrowserStatsDao) ListBrowserStatsByGroup(ctx context.Context, param LinkGroupQueryParam) ([]po.LinkBrowserStats, error) {
+// ListBrowserStatByGroup 根据分组获取指定日期内浏览器监控数据
+func (d *LinkBrowserStatDao) ListBrowserStatByGroup(ctx context.Context, param LinkGroupQueryParam) ([]po.LinkBrowserStat, error) {
 	rawSql := `
 SELECT
     tlbs.browser,
@@ -65,7 +65,7 @@ WHERE
 GROUP BY
     tl.gid, tlbs.browser;
 `
-	var result []po.LinkBrowserStats
+	var result []po.LinkBrowserStat
 	err := d.db.WithContext(ctx).
 		Raw(rawSql, param.Gid, param.StartDate, param.EndDate).Scan(&result).Error
 	return result, err

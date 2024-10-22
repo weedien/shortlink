@@ -1,5 +1,7 @@
 package types
 
+import "log/slog"
+
 type PageReq struct {
 	Current int `json:"current"`
 	Size    int `json:"size"`
@@ -50,10 +52,15 @@ func (r PageResp[T]) WithRecords(records []T) PageResp[T] {
 }
 
 // ConvertRecords converts the Records field to a different type using the provided function
-func ConvertRecords[S, D any](p *PageResp[S], fn func(S) D) *PageResp[D] {
+func ConvertRecords[S, D any](p *PageResp[S], fn func(S) (D, error)) *PageResp[D] {
 	records := make([]D, 0, len(p.Records))
-	for _, record := range p.Records {
-		records = append(records, fn(record))
+	for _, before := range p.Records {
+		after, err := fn(before)
+		if err != nil {
+			slog.Error("convert records failed", "record", before, "error", err)
+			continue
+		}
+		records = append(records, after)
 	}
 	return &PageResp[D]{
 		Total:   p.Total,

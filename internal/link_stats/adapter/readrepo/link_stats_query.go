@@ -4,38 +4,37 @@ import (
 	"context"
 	"gorm.io/gorm"
 	"math"
-	"shortlink/internal/common/constant"
 	"shortlink/internal/common/types"
-	po2 "shortlink/internal/link_stats/adapter/po"
-	"shortlink/internal/link_stats/adapters/readrepo/dao"
+	"shortlink/internal/link/domain/link"
+	"shortlink/internal/link_stats/adapter/po"
+	"shortlink/internal/link_stats/adapter/readrepo/dao"
 	"shortlink/internal/link_stats/app/query"
-	"shortlink/internal/user/adapter/po"
 )
 
-type LinkStatsQuery struct {
-	linkAccessStatsDao  dao.LinkAccessStatsDao
-	linkAccessLogsDao   dao.LinkAccessLogsDao
-	linkLocaleStatsDao  dao.LinkLocaleStatsDao
-	linkBrowserStatsDao dao.LinkBrowserStatsDao
-	linkOsStatsDao      dao.LinkOsStatsDao
-	linkDeviceStatsDao  dao.LinkDeviceStatsDao
-	linkNetworkStatsDao dao.LinkNetworkStatsDao
+type LinkStatQuery struct {
+	linkAccessStatDao  dao.LinkAccessStatDao
+	linkAccessLogsDao  dao.LinkAccessLogsDao
+	linkLocaleStatDao  dao.LinkLocaleStatDao
+	linkBrowserStatDao dao.LinkBrowserStatDao
+	linkOsStatDao      dao.LinkOsStatDao
+	linkDeviceStatDao  dao.LinkDeviceStatDao
+	linkNetworkStatDao dao.LinkNetworkStatDao
 }
 
-func NewLinkStatsQuery(db *gorm.DB) LinkStatsQuery {
-	return LinkStatsQuery{
-		linkAccessStatsDao:  dao.NewLinkAccessStatsDao(db),
-		linkAccessLogsDao:   dao.NewLinkAccessLogsDao(db),
-		linkLocaleStatsDao:  dao.NewLinkLocaleStatsDao(db),
-		linkBrowserStatsDao: dao.NewLinkBrowserStatsDao(db),
-		linkOsStatsDao:      dao.NewLinkOsStatsDao(db),
-		linkDeviceStatsDao:  dao.NewLinkDeviceStatsDao(db),
-		linkNetworkStatsDao: dao.NewLinkNetworkStatsDao(db),
+func NewLinkStatQuery(db *gorm.DB) LinkStatQuery {
+	return LinkStatQuery{
+		linkAccessStatDao:  dao.NewLinkAccessStatDao(db),
+		linkAccessLogsDao:  dao.NewLinkAccessLogsDao(db),
+		linkLocaleStatDao:  dao.NewLinkLocaleStatDao(db),
+		linkBrowserStatDao: dao.NewLinkBrowserStatDao(db),
+		linkOsStatDao:      dao.NewLinkOsStatDao(db),
+		linkDeviceStatDao:  dao.NewLinkDeviceStatDao(db),
+		linkNetworkStatDao: dao.NewLinkNetworkStatDao(db),
 	}
 }
 
-// GetLinkStats 获取单个短链接监控数据
-func (q LinkStatsQuery) GetLinkStats(ctx context.Context, param query.GetLinkStats) (res *query.LinkStats, err error) {
+// GetLinkStat 获取单个短链接监控数据
+func (q LinkStatQuery) GetLinkStat(ctx context.Context, param query.GetLinkStat) (res *query.LinkStat, err error) {
 
 	queryParam := dao.LinkQueryParam{
 		FullShortUrl: param.FullShortUrl,
@@ -45,8 +44,8 @@ func (q LinkStatsQuery) GetLinkStats(ctx context.Context, param query.GetLinkSta
 		EndDate:      param.EndDate,
 	}
 
-	var stats []po.LinkAccessStats
-	stats, err = q.linkAccessStatsDao.ListStatsByLink(ctx, queryParam)
+	var stats []po.LinkAccessStat
+	stats, err = q.linkAccessStatDao.ListStatByLink(ctx, queryParam)
 	if err != nil {
 		return
 	}
@@ -54,23 +53,23 @@ func (q LinkStatsQuery) GetLinkStats(ctx context.Context, param query.GetLinkSta
 		return
 	}
 	// 基础访问数据
-	pvUvUidStats, err := q.linkAccessLogsDao.FindPvUvUidStatsByLink(ctx, queryParam)
+	pvUvUidStat, err := q.linkAccessLogsDao.FindPvUvUidStatByLink(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
 	// 基础访问详情
-	daily := make([]query.LinkStatsAccessDaily, 0)
+	daily := make([]query.LinkStatAccessDaily, 0)
 	var rangeDates []string
 	for d := param.StartDate; !d.After(param.EndDate); d = d.AddDate(0, 0, 1) {
 		rangeDates = append(rangeDates, d.Format("2006-01-02"))
 	}
-	statsMap := make(map[string]po.LinkAccessStats)
+	statsMap := make(map[string]po.LinkAccessStat)
 	for _, item := range stats {
 		statsMap[item.Date.Format("2006-01-02")] = item
 	}
 	for _, date := range rangeDates {
 		if item, found := statsMap[date]; found {
-			accessDailyRespDTO := query.LinkStatsAccessDaily{
+			accessDailyRespDTO := query.LinkStatAccessDaily{
 				Date: date,
 				Pv:   item.Pv,
 				Uv:   item.Uv,
@@ -78,7 +77,7 @@ func (q LinkStatsQuery) GetLinkStats(ctx context.Context, param query.GetLinkSta
 			}
 			daily = append(daily, accessDailyRespDTO)
 		} else {
-			accessDailyRespDTO := query.LinkStatsAccessDaily{
+			accessDailyRespDTO := query.LinkStatAccessDaily{
 				Date: date,
 				Pv:   0,
 				Uv:   0,
@@ -88,19 +87,19 @@ func (q LinkStatsQuery) GetLinkStats(ctx context.Context, param query.GetLinkSta
 		}
 	}
 	// 地区访问详情（仅国内）
-	locales := make([]query.LinkStatsLocale, 0)
-	localeStats, err := q.linkLocaleStatsDao.ListLocaleByLink(ctx, queryParam)
+	locales := make([]query.LinkStatLocale, 0)
+	localeStat, err := q.linkLocaleStatDao.ListLocaleByLink(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
 	var localeCnTotal int
-	for _, item := range localeStats {
+	for _, item := range localeStat {
 		localeCnTotal += item.Cnt
 	}
-	for _, item := range localeStats {
+	for _, item := range localeStat {
 		ratio := float64(item.Cnt) / float64(localeCnTotal)
 		actualRatio := math.Round(ratio*100.0) / 100.0
-		locale := query.LinkStatsLocale{
+		locale := query.LinkStatLocale{
 			Cnt:    item.Cnt,
 			Locale: item.Province,
 			Ratio:  actualRatio,
@@ -109,21 +108,21 @@ func (q LinkStatsQuery) GetLinkStats(ctx context.Context, param query.GetLinkSta
 	}
 	// 小时访问详情
 	hours := make([]int, 24)
-	hourStats, err := q.linkAccessStatsDao.ListHourStatsByLink(ctx, queryParam)
+	hourStat, err := q.linkAccessStatDao.ListHourStatByLink(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
-	for _, item := range hourStats {
+	for _, item := range hourStat {
 		hours[item.Hour] = item.Pv
 	}
 	// 高频访问IP详情
-	var topIps []query.LinkStatsTopIp
-	topIpStats, err := q.linkAccessLogsDao.ListTopIpByLink(ctx, queryParam)
+	var topIps []query.LinkStatTopIp
+	topIpStat, err := q.linkAccessLogsDao.ListTopIpByLink(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
-	for _, item := range topIpStats {
-		topIp := query.LinkStatsTopIp{
+	for _, item := range topIpStat {
+		topIp := query.LinkStatTopIp{
 			Ip:  item.Ip,
 			Cnt: item.Cnt,
 		}
@@ -131,27 +130,27 @@ func (q LinkStatsQuery) GetLinkStats(ctx context.Context, param query.GetLinkSta
 	}
 	// 一周访问详情
 	weekdays := make([]int, 7)
-	weekdayStats, err := q.linkAccessStatsDao.ListWeekdayStatsByLink(ctx, queryParam)
+	weekdayStat, err := q.linkAccessStatDao.ListWeekdayStatByLink(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
-	for _, item := range weekdayStats {
-		weekdays[item.Weekday] = item.Pv
+	for _, item := range weekdayStat {
+		weekdays[item.Week] = item.Pv
 	}
 	// 浏览器访问情况
-	browsers := make([]query.LinkStatsBrowser, 0)
-	browserStats, err := q.linkBrowserStatsDao.ListBrowserStatsByLink(ctx, queryParam)
+	browsers := make([]query.LinkStatBrowser, 0)
+	browserStat, err := q.linkBrowserStatDao.ListBrowserStatByLink(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
 	var browserTotal int
-	for _, item := range browserStats {
+	for _, item := range browserStat {
 		browserTotal += item.Cnt
 	}
-	for _, item := range browserStats {
+	for _, item := range browserStat {
 		ratio := float64(item.Cnt) / float64(browserTotal)
 		actualRatio := math.Round(ratio*100.0) / 100.0
-		browser := query.LinkStatsBrowser{
+		browser := query.LinkStatBrowser{
 			Browser: item.Browser,
 			Cnt:     item.Cnt,
 			Ratio:   actualRatio,
@@ -159,19 +158,19 @@ func (q LinkStatsQuery) GetLinkStats(ctx context.Context, param query.GetLinkSta
 		browsers = append(browsers, browser)
 	}
 	// 操作系统访问详情
-	oss := make([]query.LinkStatsOs, 0)
-	osStats, err := q.linkOsStatsDao.ListOsStatsByLink(ctx, queryParam)
+	oss := make([]query.LinkStatOs, 0)
+	osStat, err := q.linkOsStatDao.ListOsStatByLink(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
 	var osTotal int
-	for _, item := range osStats {
+	for _, item := range osStat {
 		osTotal += item.Cnt
 	}
-	for _, item := range osStats {
+	for _, item := range osStat {
 		ratio := float64(item.Cnt) / float64(osTotal)
 		actualRatio := math.Round(ratio*100.0) / 100.0
-		os := query.LinkStatsOs{
+		os := query.LinkStatOs{
 			Os:    item.Os,
 			Cnt:   item.Cnt,
 			Ratio: actualRatio,
@@ -179,43 +178,43 @@ func (q LinkStatsQuery) GetLinkStats(ctx context.Context, param query.GetLinkSta
 		oss = append(oss, os)
 	}
 	// 访客访问类型详情
-	uvTypes := make([]query.LinkStatsUv, 2)
-	uvTypeStats, err := q.linkAccessLogsDao.FindUvTypeCntByLink(ctx, queryParam)
+	uvTypes := make([]query.LinkStatUv, 2)
+	uvTypeStat, err := q.linkAccessLogsDao.FindUvTypeCntByLink(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
-	oldUserCnt := uvTypeStats.OldUserCnt
-	newUserCnt := uvTypeStats.NewUserCnt
+	oldUserCnt := uvTypeStat.OldUserCnt
+	newUserCnt := uvTypeStat.NewUserCnt
 	uvTotal := oldUserCnt + newUserCnt
 	oldUserRatio := float64(oldUserCnt) / float64(uvTotal)
 	newUserRatio := float64(newUserCnt) / float64(uvTotal)
 	oldUserRatio = math.Round(oldUserRatio*100.0) / 100.0
 	newUserRatio = math.Round(newUserRatio*100.0) / 100.0
-	oldUser := query.LinkStatsUv{
+	oldUser := query.LinkStatUv{
 		VisitorType: "老访客",
 		Cnt:         oldUserCnt,
 		Ratio:       oldUserRatio,
 	}
-	newUser := query.LinkStatsUv{
+	newUser := query.LinkStatUv{
 		VisitorType: "新访客",
 		Cnt:         newUserCnt,
 		Ratio:       newUserRatio,
 	}
 	uvTypes = append(uvTypes, oldUser, newUser)
 	// 访问设备类型详情
-	devices := make([]query.LinkStatsDevice, 0)
-	deviceStats, err := q.linkDeviceStatsDao.ListDeviceStatsByLink(ctx, queryParam)
+	devices := make([]query.LinkStatDevice, 0)
+	deviceStat, err := q.linkDeviceStatDao.ListDeviceStatByLink(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
 	var deviceTotal int
-	for _, item := range deviceStats {
+	for _, item := range deviceStat {
 		deviceTotal += item.Cnt
 	}
-	for _, item := range deviceStats {
+	for _, item := range deviceStat {
 		ratio := float64(item.Cnt) / float64(deviceTotal)
 		actualRatio := math.Round(ratio*100.0) / 100.0
-		device := query.LinkStatsDevice{
+		device := query.LinkStatDevice{
 			Device: item.Device,
 			Cnt:    item.Cnt,
 			Ratio:  actualRatio,
@@ -223,19 +222,19 @@ func (q LinkStatsQuery) GetLinkStats(ctx context.Context, param query.GetLinkSta
 		devices = append(devices, device)
 	}
 	// 访问网络类型详情
-	networks := make([]query.LinkStatsNetwork, 0)
-	networkStats, err := q.linkNetworkStatsDao.ListNetworkStatsByLink(ctx, queryParam)
+	networks := make([]query.LinkStatNetwork, 0)
+	networkStat, err := q.linkNetworkStatDao.ListNetworkStatByLink(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
 	var networkTotal int
-	for _, item := range networkStats {
+	for _, item := range networkStat {
 		networkTotal += item.Cnt
 	}
-	for _, item := range networkStats {
+	for _, item := range networkStat {
 		ratio := float64(item.Cnt) / float64(networkTotal)
 		actualRatio := math.Round(ratio*100.0) / 100.0
-		network := query.LinkStatsNetwork{
+		network := query.LinkStatNetwork{
 			Network: item.Network,
 			Cnt:     item.Cnt,
 			Ratio:   actualRatio,
@@ -243,35 +242,35 @@ func (q LinkStatsQuery) GetLinkStats(ctx context.Context, param query.GetLinkSta
 		networks = append(networks, network)
 	}
 	// 组装返回数据
-	res = &query.LinkStats{
-		Pv:               pvUvUidStats.Pv,
-		Uv:               pvUvUidStats.Uv,
-		Uip:              pvUvUidStats.Uip,
-		Hourly:           hours,
-		Daily:            daily,
-		Weekly:           weekdays,
-		LocationCnStats:  locales,
-		TopIpStats:       topIps,
-		BrowserStats:     browsers,
-		OsStats:          oss,
-		VisitorTypeStats: uvTypes,
-		DeviceStats:      devices,
-		NetworkStats:     networks,
+	res = &query.LinkStat{
+		Pv:              pvUvUidStat.Pv,
+		Uv:              pvUvUidStat.Uv,
+		Uip:             pvUvUidStat.Uip,
+		Hourly:          hours,
+		Daily:           daily,
+		Weekly:          weekdays,
+		LocationCnStat:  locales,
+		TopIpStat:       topIps,
+		BrowserStat:     browsers,
+		OsStat:          oss,
+		VisitorTypeStat: uvTypes,
+		DeviceStat:      devices,
+		NetworkStat:     networks,
 	}
 	return
 }
 
-// GroupLinkStats 获取分组短链接监控数据
-func (q LinkStatsQuery) GroupLinkStats(ctx context.Context, param query.GroupLinkStats) (res *query.LinkStats, err error) {
+// GroupLinkStat 获取分组短链接监控数据
+func (q LinkStatQuery) GroupLinkStat(ctx context.Context, param query.GroupLinkStat) (res *query.LinkStat, err error) {
 
 	queryParam := dao.LinkGroupQueryParam{
 		Gid:          param.Gid,
-		EnableStatus: constant.StatusEnable,
+		EnableStatus: link.StatusActive,
 		StartDate:    param.StartDate,
 		EndDate:      param.EndDate,
 	}
-	var stats []po.LinkAccessStats
-	stats, err = q.linkAccessStatsDao.ListStatsByGroup(ctx, queryParam)
+	var stats []po.LinkAccessStat
+	stats, err = q.linkAccessStatDao.ListStatByGroup(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
@@ -279,23 +278,23 @@ func (q LinkStatsQuery) GroupLinkStats(ctx context.Context, param query.GroupLin
 		return
 	}
 	// 基础访问数据
-	pvUvUidStats, err := q.linkAccessLogsDao.FindPvUvUidStatsByGroup(ctx, queryParam)
+	pvUvUidStat, err := q.linkAccessLogsDao.FindPvUvUidStatByGroup(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
 	// 基础访问详情
-	daily := make([]query.LinkStatsAccessDaily, 0)
+	daily := make([]query.LinkStatAccessDaily, 0)
 	var rangeDates []string
 	for d := param.StartDate; !d.After(param.EndDate); d = d.AddDate(0, 0, 1) {
 		rangeDates = append(rangeDates, d.Format("2006-01-02"))
 	}
-	statsMap := make(map[string]po.LinkAccessStats)
+	statsMap := make(map[string]po.LinkAccessStat)
 	for _, item := range stats {
 		statsMap[item.Date.Format("2006-01-02")] = item
 	}
 	for _, date := range rangeDates {
 		if item, found := statsMap[date]; found {
-			accessDailyRespDTO := query.LinkStatsAccessDaily{
+			accessDailyRespDTO := query.LinkStatAccessDaily{
 				Date: date,
 				Pv:   item.Pv,
 				Uv:   item.Uv,
@@ -303,7 +302,7 @@ func (q LinkStatsQuery) GroupLinkStats(ctx context.Context, param query.GroupLin
 			}
 			daily = append(daily, accessDailyRespDTO)
 		} else {
-			accessDailyRespDTO := query.LinkStatsAccessDaily{
+			accessDailyRespDTO := query.LinkStatAccessDaily{
 				Date: date,
 				Pv:   0,
 				Uv:   0,
@@ -313,19 +312,19 @@ func (q LinkStatsQuery) GroupLinkStats(ctx context.Context, param query.GroupLin
 		}
 	}
 	// 地区访问详情（仅国内）
-	locales := make([]query.LinkStatsLocale, 0)
-	localeStats, err := q.linkLocaleStatsDao.ListLocaleByGroup(ctx, queryParam)
+	locales := make([]query.LinkStatLocale, 0)
+	localeStat, err := q.linkLocaleStatDao.ListLocaleByGroup(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
 	var localeCnTotal int
-	for _, item := range localeStats {
+	for _, item := range localeStat {
 		localeCnTotal += item.Cnt
 	}
-	for _, item := range localeStats {
+	for _, item := range localeStat {
 		ratio := float64(item.Cnt) / float64(localeCnTotal)
 		actualRatio := math.Round(ratio*100.0) / 100.0
-		locale := query.LinkStatsLocale{
+		locale := query.LinkStatLocale{
 			Cnt:    item.Cnt,
 			Locale: item.Province,
 			Ratio:  actualRatio,
@@ -334,21 +333,21 @@ func (q LinkStatsQuery) GroupLinkStats(ctx context.Context, param query.GroupLin
 	}
 	// 小时访问详情
 	hours := make([]int, 24)
-	hourStats, err := q.linkAccessStatsDao.ListHourStatsByGroup(ctx, queryParam)
+	hourStat, err := q.linkAccessStatDao.ListHourStatByGroup(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
-	for _, item := range hourStats {
+	for _, item := range hourStat {
 		hours[item.Hour] = item.Pv
 	}
 	// 高频访问IP详情
-	var topIps []query.LinkStatsTopIp
-	topIpStats, err := q.linkAccessLogsDao.ListTopIpByGroup(ctx, queryParam)
+	var topIps []query.LinkStatTopIp
+	topIpStat, err := q.linkAccessLogsDao.ListTopIpByGroup(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
-	for _, item := range topIpStats {
-		topIp := query.LinkStatsTopIp{
+	for _, item := range topIpStat {
+		topIp := query.LinkStatTopIp{
 			Ip:  item.Ip,
 			Cnt: item.Cnt,
 		}
@@ -356,27 +355,27 @@ func (q LinkStatsQuery) GroupLinkStats(ctx context.Context, param query.GroupLin
 	}
 	// 一周访问详情
 	weekdays := make([]int, 7)
-	weekdayStats, err := q.linkAccessStatsDao.ListWeekdayStatsByGroup(ctx, queryParam)
+	weekdayStat, err := q.linkAccessStatDao.ListWeekdayStatByGroup(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
-	for _, item := range weekdayStats {
-		weekdays[item.Weekday] = item.Pv
+	for _, item := range weekdayStat {
+		weekdays[item.Week] = item.Pv
 	}
 	// 浏览器访问情况
-	browsers := make([]query.LinkStatsBrowser, 0)
-	browserStats, err := q.linkBrowserStatsDao.ListBrowserStatsByGroup(ctx, queryParam)
+	browsers := make([]query.LinkStatBrowser, 0)
+	browserStat, err := q.linkBrowserStatDao.ListBrowserStatByGroup(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
 	var browserTotal int
-	for _, item := range browserStats {
+	for _, item := range browserStat {
 		browserTotal += item.Cnt
 	}
-	for _, item := range browserStats {
+	for _, item := range browserStat {
 		ratio := float64(item.Cnt) / float64(browserTotal)
 		actualRatio := math.Round(ratio*100.0) / 100.0
-		browser := query.LinkStatsBrowser{
+		browser := query.LinkStatBrowser{
 			Browser: item.Browser,
 			Cnt:     item.Cnt,
 			Ratio:   actualRatio,
@@ -384,19 +383,19 @@ func (q LinkStatsQuery) GroupLinkStats(ctx context.Context, param query.GroupLin
 		browsers = append(browsers, browser)
 	}
 	// 操作系统访问详情
-	oss := make([]query.LinkStatsOs, 0)
-	osStats, err := q.linkOsStatsDao.ListOsStatsByGroup(ctx, queryParam)
+	oss := make([]query.LinkStatOs, 0)
+	osStat, err := q.linkOsStatDao.ListOsStatByGroup(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
 	var osTotal int
-	for _, item := range osStats {
+	for _, item := range osStat {
 		osTotal += item.Cnt
 	}
-	for _, item := range osStats {
+	for _, item := range osStat {
 		ratio := float64(item.Cnt) / float64(osTotal)
 		actualRatio := math.Round(ratio*100.0) / 100.0
-		os := query.LinkStatsOs{
+		os := query.LinkStatOs{
 			Os:    item.Os,
 			Cnt:   item.Cnt,
 			Ratio: actualRatio,
@@ -404,19 +403,19 @@ func (q LinkStatsQuery) GroupLinkStats(ctx context.Context, param query.GroupLin
 		oss = append(oss, os)
 	}
 	// 访问设备类型详情
-	devices := make([]query.LinkStatsDevice, 0)
-	deviceStats, err := q.linkDeviceStatsDao.ListDeviceStatsByGroup(ctx, queryParam)
+	devices := make([]query.LinkStatDevice, 0)
+	deviceStat, err := q.linkDeviceStatDao.ListDeviceStatByGroup(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
 	var deviceTotal int
-	for _, item := range deviceStats {
+	for _, item := range deviceStat {
 		deviceTotal += item.Cnt
 	}
-	for _, item := range deviceStats {
+	for _, item := range deviceStat {
 		ratio := float64(item.Cnt) / float64(deviceTotal)
 		actualRatio := math.Round(ratio*100.0) / 100.0
-		device := query.LinkStatsDevice{
+		device := query.LinkStatDevice{
 			Device: item.Device,
 			Cnt:    item.Cnt,
 			Ratio:  actualRatio,
@@ -424,19 +423,19 @@ func (q LinkStatsQuery) GroupLinkStats(ctx context.Context, param query.GroupLin
 		devices = append(devices, device)
 	}
 	// 访问网络类型详情
-	networks := make([]query.LinkStatsNetwork, 0)
-	networkStats, err := q.linkNetworkStatsDao.ListNetworkStatsByGroup(ctx, queryParam)
+	networks := make([]query.LinkStatNetwork, 0)
+	networkStat, err := q.linkNetworkStatDao.ListNetworkStatByGroup(ctx, queryParam)
 	if err != nil {
 		return nil, err
 	}
 	var networkTotal int
-	for _, item := range networkStats {
+	for _, item := range networkStat {
 		networkTotal += item.Cnt
 	}
-	for _, item := range networkStats {
+	for _, item := range networkStat {
 		ratio := float64(item.Cnt) / float64(networkTotal)
 		actualRatio := math.Round(ratio*100.0) / 100.0
-		network := query.LinkStatsNetwork{
+		network := query.LinkStatNetwork{
 			Network: item.Network,
 			Cnt:     item.Cnt,
 			Ratio:   actualRatio,
@@ -444,33 +443,33 @@ func (q LinkStatsQuery) GroupLinkStats(ctx context.Context, param query.GroupLin
 		networks = append(networks, network)
 	}
 	// 组装返回数据
-	res = &query.LinkStats{
-		Pv:              pvUvUidStats.Pv,
-		Uv:              pvUvUidStats.Uv,
-		Uip:             pvUvUidStats.Uip,
-		Hourly:          hours,
-		Daily:           daily,
-		Weekly:          weekdays,
-		LocationCnStats: locales,
-		TopIpStats:      topIps,
-		BrowserStats:    browsers,
-		OsStats:         oss,
-		DeviceStats:     devices,
-		NetworkStats:    networks,
+	res = &query.LinkStat{
+		Pv:             pvUvUidStat.Pv,
+		Uv:             pvUvUidStat.Uv,
+		Uip:            pvUvUidStat.Uip,
+		Hourly:         hours,
+		Daily:          daily,
+		Weekly:         weekdays,
+		LocationCnStat: locales,
+		TopIpStat:      topIps,
+		BrowserStat:    browsers,
+		OsStat:         oss,
+		DeviceStat:     devices,
+		NetworkStat:    networks,
 	}
 	return
 }
 
-// GetLinkStatsAccessRecord 访问单个短链接指定时间内访问记录监控数据
-func (q LinkStatsQuery) GetLinkStatsAccessRecord(
+// GetLinkStatAccessRecord 访问单个短链接指定时间内访问记录监控数据
+func (q LinkStatQuery) GetLinkStatAccessRecord(
 	ctx context.Context,
-	param query.GetLinkStatsAccessRecord,
-) (res *types.PageResp[query.LinkStatsAccessRecord], err error) {
+	param query.GetLinkStatAccessRecord,
+) (res *types.PageResp[query.LinkStatAccessRecord], err error) {
 
 	queryParam := dao.LinkQueryParam{
 		FullShortUrl: param.FullShortUrl,
 		Gid:          param.Gid,
-		EnableStatus: constant.StatusEnable,
+		EnableStatus: link.StatusActive,
 		StartDate:    param.StartDate,
 		EndDate:      param.EndDate,
 	}
@@ -482,23 +481,23 @@ func (q LinkStatsQuery) GetLinkStatsAccessRecord(
 	}
 
 	if logPoPage.Total == 0 {
-		return types.NewEmptyPageResp[query.LinkStatsAccessRecord](), nil
+		return types.NewEmptyPageResp[query.LinkStatAccessRecord](), nil
 	}
 
-	return q.buildStatsAccessRecordResult(logPoPage, func(users []string) (userTypes []dao.UserType, err error) {
+	return q.buildStatAccessRecordResult(logPoPage, func(users []string) (userTypes []dao.UserType, err error) {
 		return q.linkAccessLogsDao.SelectUvTypeByUsers(ctx, queryParam, users)
 	})
 }
 
-// GroupLinkStatsAccessRecord 访问分组短链接指定时间内访问记录监控数据
-func (q LinkStatsQuery) GroupLinkStatsAccessRecord(
+// GroupLinkStatAccessRecord 访问分组短链接指定时间内访问记录监控数据
+func (q LinkStatQuery) GroupLinkStatAccessRecord(
 	ctx context.Context,
-	param query.GroupLinkStatsAccessRecord,
-) (res *types.PageResp[query.LinkStatsAccessRecord], err error) {
+	param query.GroupLinkStatAccessRecord,
+) (res *types.PageResp[query.LinkStatAccessRecord], err error) {
 
 	queryParam := dao.LinkGroupQueryParam{
 		Gid:          param.Gid,
-		EnableStatus: constant.StatusEnable,
+		EnableStatus: link.StatusActive,
 		StartDate:    param.StartDate,
 		EndDate:      param.EndDate,
 	}
@@ -509,18 +508,18 @@ func (q LinkStatsQuery) GroupLinkStatsAccessRecord(
 	}
 
 	if logPoPage.Total == 0 {
-		return types.NewEmptyPageResp[query.LinkStatsAccessRecord](), nil
+		return types.NewEmptyPageResp[query.LinkStatAccessRecord](), nil
 	}
 
-	return q.buildStatsAccessRecordResult(logPoPage, func(users []string) (userTypes []dao.UserType, err error) {
+	return q.buildStatAccessRecordResult(logPoPage, func(users []string) (userTypes []dao.UserType, err error) {
 		return q.linkAccessLogsDao.SelectGroupUvTypeByUsers(ctx, queryParam, users)
 	})
 }
 
-func (q LinkStatsQuery) buildStatsAccessRecordResult(
-	logPoPage *types.PageResp[po2.LinkAccessLog],
+func (q LinkStatQuery) buildStatAccessRecordResult(
+	logPoPage *types.PageResp[po.LinkAccessLog],
 	getUserTypeFn func(users []string) (userTypes []dao.UserType, err error),
-) (res *types.PageResp[query.LinkStatsAccessRecord], err error) {
+) (res *types.PageResp[query.LinkStatAccessRecord], err error) {
 
 	// 构建用户信息列表
 	logPos := logPoPage.Records
@@ -541,8 +540,8 @@ func (q LinkStatsQuery) buildStatsAccessRecordResult(
 	}
 
 	// 分页结果类型转换
-	res = types.ConvertRecords(logPoPage, func(logPo po2.LinkAccessLog) query.LinkStatsAccessRecord {
-		record := query.LinkStatsAccessRecord{
+	res = types.ConvertRecords(logPoPage, func(logPo po.LinkAccessLog) query.LinkStatAccessRecord {
+		record := query.LinkStatAccessRecord{
 			Browser:    logPo.Browser,
 			Os:         logPo.Os,
 			Ip:         logPo.IP,
@@ -561,10 +560,10 @@ func (q LinkStatsQuery) buildStatsAccessRecordResult(
 	return
 }
 
-//func (q LinkStatsQuery) buildStatsAccessRecordResultV1(
+//func (q LinkStatQuery) buildStatAccessRecordResultV1(
 //	logPos []po.LinkAccessLog,
 //	getUserTypeFn func(users []string) (userTypes []dao.UserType, err error),
-//) (records []query.LinkStatsAccessRecord, err error) {
+//) (records []query.LinkStatAccessRecord, err error) {
 //
 //	users := make([]string, len(logPos))
 //	for idx, logPo := range logPos {
@@ -578,7 +577,7 @@ func (q LinkStatsQuery) buildStatsAccessRecordResult(
 //	}
 //
 //	for _, logPo := range logPos {
-//		record := query.LinkStatsAccessRecord{
+//		record := query.LinkStatAccessRecord{
 //			Browser:    logPo.Browser,
 //			Os:         logPo.Os,
 //			Ip:         logPo.IP,
