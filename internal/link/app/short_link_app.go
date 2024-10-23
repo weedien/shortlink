@@ -25,5 +25,5 @@ type Queries struct {
 	ListGroupCount query.ListGroupCountHandler
 	GetOriginalUrl query.GetOriginalUrlHandler
 
-	PageDisabledLink query.PageRecycleBinHandler
+	PageRecycleBin query.PageRecycleBinHandler
 }

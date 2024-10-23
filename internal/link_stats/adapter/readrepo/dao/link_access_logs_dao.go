@@ -43,7 +43,7 @@ LIMIT 5;
 `
 	var result []IpCntDTO
 	err := d.db.WithContext(ctx).
-		Raw(rawSql, param.FullShortUrl, param.Gid, param.EnableStatus, param.StartDate, param.EndDate).Scan(&result).Error
+		Raw(rawSql, param.FullShortUrl, param.Gid, param.Status, param.StartDate, param.EndDate).Scan(&result).Error
 	return result, err
 }
 
@@ -68,7 +68,7 @@ LIMIT 5;
 `
 	var result []IpCntDTO
 	err := d.db.WithContext(ctx).
-		Raw(rawSql, param.Gid, param.EnableStatus, param.StartDate, param.EndDate).Scan(&result).Error
+		Raw(rawSql, param.Gid, param.Status, param.StartDate, param.EndDate).Scan(&result).Error
 	return result, err
 }
 
@@ -101,7 +101,7 @@ FROM (
 `
 	var result UvTypeCntDTO
 	err := d.db.WithContext(ctx).
-		Raw(rawSql, param.StartDate, param.EndDate, param.FullShortUrl, param.Gid, param.EnableStatus).Scan(&result).Error
+		Raw(rawSql, param.StartDate, param.EndDate, param.FullShortUrl, param.Gid, param.Status).Scan(&result).Error
 	return result, err
 }
 
@@ -132,7 +132,7 @@ GROUP BY
 `
 	var result []UserType
 	err := d.db.WithContext(ctx).
-		Raw(rawSql, param.StartDate, param.EndDate, param.FullShortUrl, param.Gid, param.EnableStatus, users).Scan(&result).Error
+		Raw(rawSql, param.StartDate, param.EndDate, param.FullShortUrl, param.Gid, param.Status, users).Scan(&result).Error
 	return result, err
 }
 
@@ -166,7 +166,7 @@ GROUP BY
 `
 	var result []UserType
 	err := d.db.WithContext(ctx).
-		Raw(rawSql, param.StartDate, param.EndDate, param.Gid, param.EnableStatus, users).Scan(&result).Error
+		Raw(rawSql, param.StartDate, param.EndDate, param.Gid, param.Status, users).Scan(&result).Error
 	return result, err
 }
 
@@ -197,7 +197,7 @@ GROUP BY
 `
 	var result PvUvUidStatDTO
 	err := d.db.WithContext(ctx).
-		Raw(rawSql, param.FullShortUrl, param.Gid, param.EnableStatus, param.StartDate, param.EndDate).Scan(&result).Error
+		Raw(rawSql, param.FullShortUrl, param.Gid, param.Status, param.StartDate, param.EndDate).Scan(&result).Error
 	return result, err
 }
 
@@ -226,7 +226,7 @@ LIMIT ? OFFSET ?;
 	var total int64
 	var result []po.LinkAccessLog
 	err := d.db.WithContext(ctx).
-		Raw(rawSql, param.FullShortUrl, param.Gid, param.EnableStatus, param.StartDate, param.EndDate, page, size).Scan(&result).Error
+		Raw(rawSql, param.FullShortUrl, param.Gid, param.Status, param.StartDate, param.EndDate, page, size).Scan(&result).Error
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +260,7 @@ GROUP BY
 `
 	var result PvUvUidStatDTO
 	err := d.db.WithContext(ctx).
-		Raw(rawSql, param.Gid, param.EnableStatus, param.StartDate, param.EndDate).Scan(&result).Error
+		Raw(rawSql, param.Gid, param.Status, param.StartDate, param.EndDate).Scan(&result).Error
 	return result, err
 }
 
@@ -287,7 +287,7 @@ LIMIT ? OFFSET ?;
 	var total int64
 	var result []po.LinkAccessLog
 	err := d.db.WithContext(ctx).
-		Raw(rawSql, param.Gid, param.EnableStatus, param.StartDate, param.EndDate, page, size).Scan(&result).Error
+		Raw(rawSql, param.Gid, param.Status, param.StartDate, param.EndDate, page, size).Scan(&result).Error
 	if err != nil {
 		return nil, err
 	}

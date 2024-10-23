@@ -5,7 +5,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"log/slog"
-	"shortlink/internal/common/config"
 	"shortlink/internal/common/error_no"
 	"shortlink/internal/common/server/httperr"
 )
@@ -22,8 +21,7 @@ func RunHttpServerOnPort(port string, createHandler func(router fiber.Router)) f
 	// 监控页面
 	app.Get("/metrics", monitor.New(monitor.Config{Title: "Metrics Page"}))
 
-	apiRouter := app.Group(config.BaseRoutePrefix.String())
-	createHandler(apiRouter)
+	createHandler(app)
 
 	// 处理未找到的路由
 	app.All("*", func(c *fiber.Ctx) error {

@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"reflect"
 	"shortlink/internal/common/base_event"
-	"shortlink/internal/common/idempotency"
 	"sync"
+	"time"
 )
 
 type RocketMqBasedEventBus struct {
@@ -17,8 +17,8 @@ type RocketMqBasedEventBus struct {
 	typeRegistry map[string]reflect.Type
 	producer     rmqclient.Producer
 	consumer     rmqclient.SimpleConsumer
-	idemHandler  idempotency.MessageQueueIdempotencyHandler
-	stopFn       func()
+	//idemHandler  idem.Handler
+	stopFn func()
 }
 
 type listenerGroup struct {
@@ -34,7 +34,8 @@ func NewRocketMqBasedEventBus(ctx context.Context) *RocketMqBasedEventBus {
 		typeRegistry: make(map[string]reflect.Type),
 		producer:     producer,
 		consumer:     consumer,
-		stopFn:       stopFn,
+		//idemHandler:  idemHandler,
+		stopFn: stopFn,
 	}
 
 	go bus.startReceivingMessages(ctx)
@@ -48,7 +49,7 @@ func (bus *RocketMqBasedEventBus) Close() {
 
 func (bus *RocketMqBasedEventBus) startReceivingMessages(ctx context.Context) {
 	for {
-		mvs, err := bus.consumer.Receive(ctx, 16, 20)
+		mvs, err := bus.consumer.Receive(ctx, 16, time.Second*20)
 		if err != nil {
 			slog.Error("Failed to receive message from RocketMQ", "error", err)
 			continue
@@ -56,15 +57,14 @@ func (bus *RocketMqBasedEventBus) startReceivingMessages(ctx context.Context) {
 
 		for _, mv := range mvs {
 			// 幂等校验 应用名称+消息ID
-			if bus.idemHandler.HasMessageBeenConsumed(mv.GetMessageId()) {
-				slog.Warn("Message has been consumed", "mid", mv.GetMessageId())
-				continue
-			}
-			// TODO 这段逻辑需要完善
-			if bus.idemHandler.IsMessageBeingConsumed(mv.GetMessageId()) {
-				slog.Warn("Message is being consumed", "mid", mv.GetMessageId())
-				continue
-			}
+			//if bus.idemHandler.HasMessageBeenConsumed(mv.GetMessageId()) {
+			//	slog.Warn("Message has been consumed", "mid", mv.GetMessageId())
+			//	continue
+			//}
+			//if bus.idemHandler.IsMessageBeingConsumed(mv.GetMessageId()) {
+			//	slog.Warn("Message is being consumed", "mid", mv.GetMessageId())
+			//	continue
+			//}
 			eventType := bus.getTypeFromTag(mv.GetTag())
 			if eventType == nil {
 				slog.Warn("Unrecognized event type", "tag", mv.GetTag())

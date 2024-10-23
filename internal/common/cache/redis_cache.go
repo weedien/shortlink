@@ -3,7 +3,6 @@ package cache
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/bytedance/sonic"
 	"github.com/redis/go-redis/v9"
 	"reflect"
@@ -32,9 +31,13 @@ func (r RedisDistributedCache) Get(ctx context.Context, key string, valueType re
 	value, err := r.rdb.Get(ctx, key).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
-			return nil, nil
+			return nil, error_no.RedisKeyNotExist
 		}
 		return nil, err
+	}
+
+	if valueType == reflect.TypeOf("") {
+		return value, nil
 	}
 
 	result := reflect.New(valueType).Interface()
@@ -112,7 +115,7 @@ func (r RedisDistributedCache) SafeGet(
 	cacheLoader Loader,
 	expiration time.Duration,
 ) (interface{}, error) {
-	return r.SafeGetWithCacheGetIfAbsent(ctx, key, valueType, cacheLoader, expiration, "", "", nil)
+	return r.SafeGetWithCacheGetIfAbsent(ctx, key, valueType, cacheLoader, expiration, "", "", "", nil)
 }
 
 func (r RedisDistributedCache) SafeGetWithBloomFilter(
@@ -122,8 +125,9 @@ func (r RedisDistributedCache) SafeGetWithBloomFilter(
 	cacheLoader Loader,
 	expiration time.Duration,
 	bloomFilter string,
+	bloomKey string,
 ) (interface{}, error) {
-	return r.SafeGetWithCacheGetIfAbsent(ctx, key, valueType, cacheLoader, expiration, bloomFilter, "", nil)
+	return r.SafeGetWithCacheGetIfAbsent(ctx, key, valueType, cacheLoader, expiration, bloomFilter, bloomKey, "", nil)
 }
 
 func (r RedisDistributedCache) SafeGetWithCacheCheckFilter(
@@ -133,9 +137,10 @@ func (r RedisDistributedCache) SafeGetWithCacheCheckFilter(
 	cacheLoader Loader,
 	expiration time.Duration,
 	bloomFilter string,
+	bloomKey string,
 	exceptBloomKey string,
 ) (interface{}, error) {
-	return r.SafeGetWithCacheGetIfAbsent(ctx, key, valueType, cacheLoader, expiration, bloomFilter, exceptBloomKey, nil)
+	return r.SafeGetWithCacheGetIfAbsent(ctx, key, valueType, cacheLoader, expiration, bloomFilter, bloomKey, exceptBloomKey, nil)
 }
 
 func (r RedisDistributedCache) SafeGetWithCacheGetIfAbsent(
@@ -145,42 +150,55 @@ func (r RedisDistributedCache) SafeGetWithCacheGetIfAbsent(
 	cacheLoader Loader,
 	expiration time.Duration,
 	bloomFilter string,
+	bloomKey string,
 	exceptBloomKey string,
 	cacheGetIfAbsent GetIfAbsent,
 ) (interface{}, error) {
 	// step1 从缓存中取值
 	result, err := r.Get(ctx, key, valueType)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, error_no.RedisKeyNotExist) {
+
+		} else {
+			return nil, err
+		}
 	}
-	_isNilOrEmpty, inBloom, deleteFromBloom := false, true, false
+	_isNilOrEmpty := false
 	if _isNilOrEmpty, err = isNilOrEmpty(result); err != nil {
 		return nil, err
 	}
+	if !_isNilOrEmpty {
+		return result, nil
+	}
+
+	// 缓存中为空 可能是因为缓存失效 判断是否存在于布隆过滤器中
+	inBloom, deleteFromBloom := true, false
 	if bloomFilter != "" {
-		if inBloom, err = rdb.BFExists(ctx, bloomFilter, key).Result(); err != nil {
+		if inBloom, err = rdb.BFExists(ctx, bloomFilter, bloomKey).Result(); err != nil {
 			return nil, err
 		}
 	}
 	if exceptBloomKey != "" {
-		if _, err = rdb.Get(ctx, fmt.Sprintf(constant.GotoIsNullLinkKey, key)).Result(); err != nil {
+		if _, err = rdb.Get(ctx, exceptBloomKey).Result(); err != nil {
 			if errors.Is(err, redis.Nil) {
 				deleteFromBloom = false
+			} else {
+				return nil, err
 			}
-			return nil, err
+		} else {
+			deleteFromBloom = true
 		}
-		deleteFromBloom = true
 	}
 	// 存在于缓存 -> 返回值
 	// 不在布隆过滤器 | 已经失效 -> 无需查询数据库
-	if !_isNilOrEmpty || !inBloom || deleteFromBloom {
-		return result, nil
+	if !inBloom || deleteFromBloom {
+		return nil, error_no.RedisKeyNotExist
 	}
 
 	// step2 获取分布式锁
 	acquired := false
 	lockKey := constant.LockGotoLinkKey + key
-	if acquired, err = r.locker.Acquire(ctx, lockKey, expiration); err != nil {
+	if acquired, err = r.locker.Acquire(ctx, lockKey, constant.DefaultTimeOut); err != nil {
 		return result, err
 	}
 	if !acquired {
@@ -194,14 +212,18 @@ func (r RedisDistributedCache) SafeGetWithCacheGetIfAbsent(
 
 	// 双重判断，防止缓存击穿
 	if result, err = r.Get(ctx, key, valueType); err != nil {
-		return nil, err
+		if errors.Is(err, error_no.RedisKeyNotExist) {
+
+		} else {
+			return nil, err
+		}
 	}
 	if _isNilOrEmpty, err = isNilOrEmpty(result); err != nil {
 		return nil, err
 	}
 	if _isNilOrEmpty {
 		// 从数据库中获取
-		if result, err = r.loadAndSet(ctx, key, cacheLoader, expiration, bloomFilter, true); err != nil {
+		if result, err = r.loadAndSet(ctx, key, cacheLoader, expiration, bloomFilter, bloomKey, false); err != nil {
 			return nil, err
 		}
 		if _isNilOrEmpty, err = isNilOrEmpty(result); err != nil {
@@ -224,11 +246,12 @@ func (r RedisDistributedCache) SafePut(
 	value interface{},
 	expiration time.Duration,
 	bloomFilter string,
+	bloomKey string,
 ) error {
 	if err := r.Put(ctx, key, value, expiration); err != nil {
 		return err
 	}
-	return r.rdb.BFAdd(ctx, bloomFilter, key).Err()
+	return r.rdb.BFAdd(ctx, bloomFilter, bloomKey).Err()
 }
 
 func (r RedisDistributedCache) SafeDelete(ctx context.Context, key string, exceptBloomKey string) error {
@@ -250,8 +273,9 @@ func (r RedisDistributedCache) ExistsInBloomFilter(ctx context.Context, key stri
 		if _, err := r.rdb.Get(ctx, exceptKey).Result(); err != nil {
 			if errors.Is(err, redis.Nil) {
 
+			} else {
+				return false, err
 			}
-			return false, err
 		}
 		// 在失效缓存中，意味着从布隆过滤器中删除了
 		return false, nil
@@ -272,6 +296,7 @@ func (r RedisDistributedCache) loadAndSet(
 	cacheLoader Loader,
 	expiration time.Duration,
 	bloomFilter string,
+	bloomKey string,
 	safeFlag bool,
 ) (interface{}, error) {
 	result, err := cacheLoader()
@@ -286,7 +311,7 @@ func (r RedisDistributedCache) loadAndSet(
 		return nil, err
 	}
 	if safeFlag {
-		if err = r.SafePut(ctx, key, result, expiration, bloomFilter); err != nil {
+		if err = r.SafePut(ctx, key, result, expiration, bloomFilter, bloomKey); err != nil {
 			return nil, err
 		}
 	} else {

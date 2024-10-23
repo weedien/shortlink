@@ -119,13 +119,20 @@ func GetWithCacheAndLock[T any](
 
 // Function to check if a value is nil or empty
 func isNilOrEmpty(v interface{}) (bool, error) {
+	if v == nil {
+		return true, nil
+	}
+
 	val := reflect.ValueOf(v)
+
 	switch val.Kind() {
-	case reflect.Ptr, reflect.Slice, reflect.Map, reflect.Chan:
-		return val.IsNil() || val.Len() == 0, nil
 	case reflect.String:
+		return val.String() == "", nil
+	case reflect.Slice, reflect.Map, reflect.Array:
 		return val.Len() == 0, nil
+	case reflect.Ptr:
+		return val.IsNil(), nil
 	default:
-		return false, errors.New("invalid type")
+		return false, errors.New("unsupported type")
 	}
 }

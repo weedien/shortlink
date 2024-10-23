@@ -39,7 +39,7 @@ func (q LinkStatsQuery) GetLinkStats(ctx context.Context, param query.GetLinkSta
 	queryParam := dao.LinkQueryParam{
 		FullShortUrl: param.FullShortUrl,
 		Gid:          param.Gid,
-		EnableStatus: param.EnableStatus,
+		Status:       param.Status,
 		StartDate:    param.StartDate,
 		EndDate:      param.EndDate,
 	}
@@ -264,10 +264,10 @@ func (q LinkStatsQuery) GetLinkStats(ctx context.Context, param query.GetLinkSta
 func (q LinkStatsQuery) GroupLinkStats(ctx context.Context, param query.GroupLinkStats) (res *query.LinkStats, err error) {
 
 	queryParam := dao.LinkGroupQueryParam{
-		Gid:          param.Gid,
-		EnableStatus: link.StatusActive,
-		StartDate:    param.StartDate,
-		EndDate:      param.EndDate,
+		Gid:       param.Gid,
+		Status:    link.StatusActive,
+		StartDate: param.StartDate,
+		EndDate:   param.EndDate,
 	}
 	var stats []po.LinkAccessStat
 	stats, err = q.linkAccessStatDao.ListStatByGroup(ctx, queryParam)
@@ -469,7 +469,7 @@ func (q LinkStatsQuery) GetLinkStatsAccessRecord(
 	queryParam := dao.LinkQueryParam{
 		FullShortUrl: param.FullShortUrl,
 		Gid:          param.Gid,
-		EnableStatus: link.StatusActive,
+		Status:       link.StatusActive,
 		StartDate:    param.StartDate,
 		EndDate:      param.EndDate,
 	}
@@ -496,10 +496,10 @@ func (q LinkStatsQuery) GroupLinkStatsAccessRecord(
 ) (res *types.PageResp[query.LinkStatsAccessRecord], err error) {
 
 	queryParam := dao.LinkGroupQueryParam{
-		Gid:          param.Gid,
-		EnableStatus: link.StatusActive,
-		StartDate:    param.StartDate,
-		EndDate:      param.EndDate,
+		Gid:       param.Gid,
+		Status:    link.StatusActive,
+		StartDate: param.StartDate,
+		EndDate:   param.EndDate,
 	}
 
 	logPoPage, err := q.linkAccessLogsDao.PageGroup(ctx, queryParam, param.Current, param.Size)
@@ -540,7 +540,7 @@ func (q LinkStatsQuery) buildStatAccessRecordResult(
 	}
 
 	// 分页结果类型转换
-	res = types.ConvertRecords(logPoPage, func(logPo po.LinkAccessLog) query.LinkStatsAccessRecord {
+	res = types.ConvertRecords(logPoPage, func(logPo po.LinkAccessLog) (query.LinkStatsAccessRecord, error) {
 		record := query.LinkStatsAccessRecord{
 			Browser:    logPo.Browser,
 			Os:         logPo.Os,
@@ -555,7 +555,7 @@ func (q LinkStatsQuery) buildStatAccessRecordResult(
 		if userType, found := userTypeMap[logPo.User]; found {
 			record.UvType = userType.UvType
 		}
-		return record
+		return record, nil
 	})
 	return
 }

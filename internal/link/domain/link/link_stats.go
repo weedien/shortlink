@@ -27,6 +27,26 @@ func NewInitStats() *Stats {
 	}
 }
 
+// ClickNum 获取点击次数
+func (s *Stats) ClickNum() int {
+	return s.clickNum
+}
+
+// TotalPv 获取总页面访问次数
+func (s *Stats) TotalPv() int {
+	return s.totalPv
+}
+
+// TotalUv 获取总独立访客数
+func (s *Stats) TotalUv() int {
+	return s.totalUv
+}
+
+// TotalUip 获取总独立IP数
+func (s *Stats) TotalUip() int {
+	return s.totalUip
+}
+
 func UnmarshalStatsFromDB(
 	clickNum int,
 	totalPv int,

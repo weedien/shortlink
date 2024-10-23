@@ -32,8 +32,8 @@ func NewPageRecycleBinHandler(
 
 type PageRecycleBin struct {
 	types.PageReq
-	Gids         []string `json:"gids"`
-	EnableStatus int      `json:"enableStatus"`
+	Gids   []string `json:"gids"`
+	Status string   `json:"enableStatus"`
 }
 
 type PageRecycleBinReadModel interface {

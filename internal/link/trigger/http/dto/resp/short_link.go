@@ -49,7 +49,7 @@ type LinkPageResp struct {
 	// 有效期类型 0：永久有效 1：自定义
 	ValidDateType int `json:"validDateType"`
 	// 启用标识 0：启用 1：未启用
-	EnableStatus int `json:"enableStatus"`
+	Status int `json:"enableStatus"`
 	// 有效期
 	ValidDate time.Time `json:"validDate" format:"2006-01-02 15:04:05"`
 	// 创建时间

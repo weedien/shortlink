@@ -58,11 +58,11 @@ func (h RecycleBinApi) PageQueryRecycleBin(c *fiber.Ctx) (err error) {
 		return err
 	}
 
-	res := &types.PageResp[link.Link]{}
-	res, err = h.app.Queries.PageDisabledLink.Handle(c.Context(), query.PageRecycleBin{
-		PageReq:      reqParam.PageReq,
-		Gids:         reqParam.Gids,
-		EnableStatus: link.StatusDisabled,
+	res := &types.PageResp[query.Link]{}
+	res, err = h.app.Queries.PageRecycleBin.Handle(c.Context(), query.PageRecycleBin{
+		PageReq: reqParam.PageReq,
+		Gids:    reqParam.Gids,
+		Status:  link.StatusDisabled,
 	})
 	if err != nil {
 		return err

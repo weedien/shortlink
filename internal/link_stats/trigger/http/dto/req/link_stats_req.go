@@ -50,7 +50,7 @@ type LinkStatsAccessRecordReq struct {
 	// 结束时间
 	EndTime time.Time `json:"end_time" validate:"required" format:"2006-01-02 15:04:05"`
 	// 启用标识
-	EnableStatus int `json:"enable_status" validate:"required"`
+	Status int `json:"enable_status" validate:"required"`
 }
 
 // LinkStatsReq 短链接监控请求
@@ -64,5 +64,5 @@ type LinkStatsReq struct {
 	// 结束时间
 	EndTime time.Time `json:"end_time" validate:"required" format:"2006-01-02 15:04:05"`
 	// 启用标识
-	EnableStatus int `json:"enable_status" validate:"required"`
+	Status int `json:"enable_status" validate:"required"`
 }

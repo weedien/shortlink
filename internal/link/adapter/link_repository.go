@@ -21,7 +21,7 @@ type LinkRepository struct {
 	db               *gorm.DB
 	distributedCache cache.DistributedCache
 	locker           lock.DistributedLock
-	cvt              assembler.LinkConverter
+	assembler        assembler.LinkAssembler
 }
 
 func NewLinkRepository(
@@ -33,7 +33,7 @@ func NewLinkRepository(
 		db:               db,
 		distributedCache: distributedCache,
 		locker:           locker,
-		cvt:              assembler.LinkConverter{},
+		assembler:        assembler.LinkAssembler{},
 	}
 }
 
@@ -179,8 +179,8 @@ func (r LinkRepository) ShortUriExists(ctx context.Context, shortUri string) (bo
 
 // CreateLink 保存短链接并进行预热
 func (r LinkRepository) CreateLink(ctx context.Context, lk *link.Link) (err error) {
-	linkPo := r.cvt.LinkEntityToPo(*lk)
-	linkGotoPo := r.cvt.LinkGotoEntityToPo(*lk)
+	linkPo := r.assembler.LinkEntityToLinkPo(lk)
+	linkGotoPo := r.assembler.LinkEntityToLinkGotoPo(lk)
 
 	err = r.db.Transaction(func(tx *gorm.DB) error {
 		if err = tx.Create(&linkPo).Error; err != nil {
@@ -202,12 +202,14 @@ func (r LinkRepository) CreateLink(ctx context.Context, lk *link.Link) (err erro
 		return
 	}
 
+	cacheValue := link.NewCacheValue(lk)
 	err = r.distributedCache.SafePut(
 		ctx,
 		constant.GotoLinkKey+lk.ShortUri(),
-		link.NewCacheValue(lk),
-		lk.ValidDate().Expiration(),
+		cacheValue,
+		cacheValue.Expiration(),
 		cache.ShortUriCreateBloomFilter,
+		lk.ShortUri(),
 	)
 	return
 }
@@ -215,8 +217,8 @@ func (r LinkRepository) CreateLink(ctx context.Context, lk *link.Link) (err erro
 func (r LinkRepository) CreateLinkBatch(ctx context.Context, links []*link.Link) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		for _, lk := range links {
-			linkPo := r.cvt.LinkEntityToPo(*lk)
-			linkGotoPo := r.cvt.LinkGotoEntityToPo(*lk)
+			linkPo := r.assembler.LinkEntityToLinkPo(lk)
+			linkGotoPo := r.assembler.LinkEntityToLinkGotoPo(lk)
 
 			if err := tx.Create(&linkPo).Error; err != nil {
 				return err
@@ -233,6 +235,7 @@ func (r LinkRepository) CreateLinkBatch(ctx context.Context, links []*link.Link)
 				link.NewCacheValue(lk),
 				lk.ValidDate().Expiration(),
 				cache.ShortUriCreateBloomFilter,
+				lk.ShortUri(),
 			)
 			if err != nil {
 				return err
@@ -259,15 +262,15 @@ func (r LinkRepository) UpdateLink(
 		return err
 	}
 
-	lk := r.cvt.LinkPoToEntity(linkPo)
+	lk := r.assembler.LinkPoToLinkEntity(&linkPo)
 	if lk, err = updateFn(ctx, lk); err != nil {
 		return err
 	}
-	updatedLinkPo := r.cvt.LinkEntityToPo(*lk)
+	updatedLinkPo := r.assembler.LinkEntityToLinkPo(lk)
 
 	if updatedLinkPo.Gid != linkPo.Gid {
 		// 获取分布式锁
-		lockKey := constant.LockGidUpdateKey + linkPo.FullShortUrl
+		lockKey := constant.LockGidUpdateKey + linkPo.ShortUri
 		acquired := false
 		if acquired, err = r.locker.Acquire(ctx, lockKey, constant.DefaultTimeOut); err != nil {
 			return err
@@ -284,7 +287,7 @@ func (r LinkRepository) UpdateLink(
 			}
 			oldLinkGotoPo := po.LinkGoto{
 				Gid:      linkPo.Gid,
-				ShortUri: linkPo.FullShortUrl,
+				ShortUri: linkPo.ShortUri,
 			}
 			if err = tx.WithContext(ctx).Delete(oldLinkGotoPo).Error; err != nil {
 				return err
@@ -296,7 +299,7 @@ func (r LinkRepository) UpdateLink(
 			}
 			shortLinkGotoPo := po.LinkGoto{
 				Gid:      updatedLinkPo.Gid,
-				ShortUri: updatedLinkPo.FullShortUrl,
+				ShortUri: updatedLinkPo.ShortUri,
 			}
 			if err = tx.WithContext(ctx).Create(&shortLinkGotoPo).Error; err != nil {
 				return err

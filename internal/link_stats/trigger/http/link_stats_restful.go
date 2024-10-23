@@ -41,7 +41,7 @@ func (h LinkStatsApi) GetLinkStats(c *fiber.Ctx) (err error) {
 		Gid:          reqParam.Gid,
 		StartDate:    reqParam.StartTime,
 		EndDate:      reqParam.EndTime,
-		EnableStatus: reqParam.EnableStatus,
+		Status:       reqParam.Status,
 	})
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func (h LinkStatsApi) GetLinkStatsAccessRecord(c *fiber.Ctx) (err error) {
 		Gid:          reqParam.Gid,
 		StartDate:    reqParam.StartTime,
 		EndDate:      reqParam.EndTime,
-		EnableStatus: reqParam.EnableStatus,
+		Status:       reqParam.Status,
 	})
 	if err != nil {
 		return err

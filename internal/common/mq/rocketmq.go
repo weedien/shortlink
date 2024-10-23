@@ -42,11 +42,11 @@ func ConnectToRocketMQ() (rmqclient.Producer, rmqclient.SimpleConsumer, func()) 
 	)
 
 	if err != nil {
-		panic(err)
+		panic("Failed to create producer: " + err.Error())
 	}
 	err = producer.Start()
 	if err != nil {
-		slog.Error("Failed to start producer: ", "error", err)
+		panic("Failed to start producer: " + err.Error())
 	}
 
 	// In most case, you don't need to create many consumers, singleton pattern is more recommended.
@@ -64,12 +64,12 @@ func ConnectToRocketMQ() (rmqclient.Producer, rmqclient.SimpleConsumer, func()) 
 		}),
 	)
 	if err != nil {
-		slog.Info("Failed to create simple consumer: %s\n", "error", err)
+		panic("Failed to create simple consumer: " + err.Error())
 	}
 	// start simpleConsumer
 	err = simpleConsumer.Start()
 	if err != nil {
-		slog.Info("Failed to start simple consumer: %s\n", "error", err)
+		panic("Failed to start simple consumer: " + err.Error())
 	}
 
 	// graceful stop producer and simpleConsumer

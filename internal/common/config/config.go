@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/gofiber/fiber/v2/log"
 	"os"
-	"shortlink/internal/common/toolkit"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -16,20 +16,18 @@ type configWithDefault struct {
 }
 
 var (
-	DSN                  = configWithDefault{"DSN", "host=remote user=weedien password=031209 dbname=wespace search_path=link port=5432 sslmode=disable TimeZone=Asia/Shanghai"}
-	RedisAddr            = configWithDefault{"REDIS_ADDR", "localhost:6379"}
-	RedisPassword        = configWithDefault{"REDIS_PASSWORD", ""}
-	RedisDB              = configWithDefault{"REDIS_DB", "0"}
-	EnableSharding       = configWithDefault{"ENABLE_SHARDING", "false"}
-	BaseRoutePrefix      = configWithDefault{"BASE_ROUTE_PREFIX", "/api/short-link/v1"}
-	Port                 = configWithDefault{"PORT", "8080"}
-	LinkDomain           = configWithDefault{"SHORT_LINK_DOMAIN", "http://localhost:8080"}
-	EnableWhiteList      = configWithDefault{"ENABLE_WHITE_LIST", "false"}
-	DomainWhiteList      = configWithDefault{"DOMAIN_WHITE_LIST", ""}
-	DomainWhiteListNames = configWithDefault{"DOMAIN_WHITE_LIST_NAMES", "掘金,知乎,简书,博客园,CSDN,开源中国,SegmentFault,思否,博客,博客园,博客园首页,博客首页,博客园博客"}
-	DefaultFavicon       = configWithDefault{"DEFAULT_FAVICON", "https://cdn.jsdelivr.net/gh/weedien/shortlink@main/static/favicon.ico"}
-	UseSSL               = configWithDefault{"USE_SSL", "false"}
-	MaxAttempts          = configWithDefault{"MAX_ATTEMPTS", "10"}
+	DSN             = configWithDefault{"DSN", "host=remote user=weedien password=031209 dbname=wespace search_path=link port=5432 sslmode=disable TimeZone=Asia/Shanghai"}
+	RedisAddr       = configWithDefault{"REDIS_ADDR", "localhost:6379"}
+	RedisPassword   = configWithDefault{"REDIS_PASSWORD", ""}
+	RedisDB         = configWithDefault{"REDIS_DB", "0"}
+	EnableSharding  = configWithDefault{"ENABLE_SHARDING", "false"}
+	BaseRoutePrefix = configWithDefault{"BASE_ROUTE_PREFIX", "/api/short-link/v1"}
+	Port            = configWithDefault{"PORT", "8080"}
+	LinkDomain      = configWithDefault{"LINK_DOMAIN", "http://localhost:8080"}
+	DomainWhiteList = configWithDefault{"DOMAIN_WHITELIST", ""}
+	DefaultFavicon  = configWithDefault{"DEFAULT_FAVICON_URL", "https://cdn.jsdelivr.net/gh/weedien/shortlink@main/static/favicon.ico"}
+	UseSSL          = configWithDefault{"USE_SSL", "false"}
+	MaxAttempts     = configWithDefault{"MAX_ATTEMPTS", "10"}
 )
 
 func (c configWithDefault) String() string {
@@ -59,7 +57,7 @@ func (c configWithDefault) Bool() bool {
 func (c configWithDefault) Array() []string {
 	value := Default(c.key, c.defaultValue)
 	// split by comma
-	return toolkit.Split(value, ',')
+	return strings.Split(value, ",")
 }
 
 // Config func to get env value

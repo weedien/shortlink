@@ -2,7 +2,7 @@ package po
 
 import "gorm.io/gorm"
 
-const TableNameLinkGoto = "link_goto"
+const TableNameLinkGoto = "t_link_goto"
 
 // LinkGoto mapped from table <link_goto>
 //

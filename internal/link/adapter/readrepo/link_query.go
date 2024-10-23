@@ -2,25 +2,142 @@ package readrepo
 
 import (
 	"context"
-	"github.com/jinzhu/copier"
+	"errors"
 	"gorm.io/gorm"
+	"shortlink/internal/common/error_no"
 	"shortlink/internal/common/types"
 	"shortlink/internal/link/adapter/po"
-	"shortlink/internal/link/adapter/readrepo/dao"
 	"shortlink/internal/link/app/query"
 	"shortlink/internal/link/domain/link"
 )
 
 type LinkQuery struct {
 	linkFactory *link.Factory
-	linkDao     dao.LinkDao
+	db          *gorm.DB
 }
 
 func NewLinkQuery(db *gorm.DB, factory *link.Factory) LinkQuery {
 	return LinkQuery{
 		linkFactory: factory,
-		linkDao:     dao.NewLinkDao(db),
+		db:          db,
 	}
+}
+
+func (q LinkQuery) PageLink(ctx context.Context, param query.PageLink) (res *types.PageResp[query.Link], err error) {
+	rawSql := `
+SELECT t.*, COALESCE(s.today_pv, 0) AS todayPv, COALESCE(s.today_uv, 0) AS todayUv, COALESCE(s.today_uip, 0) AS todayUip
+FROM t_link t
+LEFT JOIN t_link_stats_today s ON t.short_uri = s.short_uri AND s.date = current_date
+WHERE t.gid = ? AND t.status = ? AND t.delete_time is null
+ORDER BY 
+    CASE 
+        WHEN ? = 'todayPv' THEN todayPv
+        WHEN ? = 'todayUv' THEN todayUv
+        WHEN ? = 'todayUip' THEN todayUip
+        WHEN ? = 'totalPv' THEN t.total_pv
+        WHEN ? = 'totalUv' THEN t.total_uv
+        WHEN ? = 'totalUip' THEN t.total_uip
+        ELSE t.create_time
+    END DESC
+LIMIT ? OFFSET ?;
+`
+
+	var records []query.Link
+	orderTag := param.OrderTag
+	err = q.db.WithContext(ctx).
+		Raw(rawSql, param.Gid, orderTag, orderTag, orderTag, orderTag, orderTag, orderTag, param.Limit(), param.Offset()).Scan(&records).Error
+	if err != nil {
+		return
+	}
+
+	var total int64
+	err = q.db.WithContext(ctx).Model(&po.Link{}).Where("gid = ?", param.Gid).Count(&total).Error
+	if err != nil {
+		return
+	}
+
+	res = &types.PageResp[query.Link]{
+		Current: param.Current,
+		Size:    param.Size,
+		Total:   total,
+		Records: records,
+	}
+	return
+}
+
+func (q LinkQuery) ListGroupLinkCount(ctx context.Context, gidList []string) (res []query.GroupLinkCount, err error) {
+	if err = q.db.WithContext(ctx).
+		Table("link").Select("gid, COUNT(*) AS count").Where("gid IN ?", gidList).Group("gid").
+		Find(&res).Error; err != nil {
+		return
+	}
+	return
+}
+
+// PageRecycleBin 分页查询回收站中的短链接
+func (q LinkQuery) PageRecycleBin(
+	ctx context.Context,
+	param query.PageRecycleBin,
+) (res *types.PageResp[query.Link], err error) {
+	rawSql := `
+SELECT t.*, COALESCE(s.today_pv, 0) AS todayPv, COALESCE(s.today_uv, 0) AS todayUv, COALESCE(s.today_uip, 0) AS todayUip
+FROM t_link t
+LEFT JOIN t_link_stats_today s ON t.short_uri = s.short_uri AND s.date = current_date
+WHERE t.gid IN (?) AND t.status = 1
+ORDER BY t.update_time
+LIMIT ? OFFSET ?;
+`
+	records := make([]query.Link, 0)
+	if err = q.db.WithContext(ctx).Raw(rawSql, param.Gids, param.Limit(), param.Offset()).Scan(&records).Error; err != nil {
+		return
+	}
+
+	var total int64
+	if err = q.db.WithContext(ctx).Model(&po.Link{}).Where("gid IN (?)", param.Gids).Count(&total).Error; err != nil {
+		return
+	}
+
+	res = &types.PageResp[query.Link]{
+		Current: param.Current,
+		Size:    param.Size,
+		Total:   total,
+		Records: records,
+	}
+
+	return
+}
+
+func (q LinkQuery) GetLink(ctx context.Context, shortUri string) (lk *link.Link, err error) {
+	linkGotoPo := po.LinkGoto{}
+	if err = q.db.WithContext(ctx).Where("short_uri = ?", shortUri).First(&linkGotoPo).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			err = error_no.LinkNotExists
+		}
+		return
+	}
+
+	linkPo := &po.Link{}
+	if err = q.db.WithContext(ctx).Where("short_uri = ? AND gid = ?", shortUri, linkGotoPo.Gid).First(linkPo).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			err = error_no.LinkNotExists
+		}
+		return
+	}
+
+	// 将持久化对象转换为领域模型
+	lk = &link.Link{}
+
+	validDate := &link.ValidDate{}
+	if validDate, err = link.NewValidDate(linkPo.ValidType, linkPo.StartDate, linkPo.EndDate); err != nil {
+		return
+	}
+
+	if lk, err = q.linkFactory.NewLinkFromDB(linkPo.ID, linkPo.Gid, linkPo.ShortUri, linkPo.OriginalUrl, linkPo.Status,
+		linkPo.CreateType, linkPo.Favicon, linkPo.Desc, validDate); err != nil {
+		return
+	}
+
+	return
 }
 
 // GetOriginalUrlByShortUri 根据短链接获取原始链接
@@ -247,88 +364,3 @@ func NewLinkQuery(db *gorm.DB, factory *link.Factory) LinkQuery {
 //
 //	return res, nil
 //}
-
-func (q LinkQuery) PageLink(ctx context.Context, param query.PageLink) (res *types.PageResp[query.Link], err error) {
-	linkPage, err := q.linkDao.PageLink(ctx, param.Gid, param.OrderTag, param.Current, param.Size)
-	if err != nil {
-		return
-	}
-
-	res = types.ConvertRecords(linkPage, func(dto dao.LinkDTO) (query.Link, error) {
-		lk := query.Link{}
-		if err = copier.Copy(&lk, &dto); err != nil {
-			return query.Link{}, err
-		}
-		return lk, nil
-	})
-	return
-}
-
-func (q LinkQuery) ListGroupLinkCount(ctx context.Context, gidList []string) (res []query.GroupLinkCount, err error) {
-	linkGidCountDTOs, err := q.linkDao.ListGroupLinkCount(ctx, gidList)
-	if err != nil {
-		return
-	}
-
-	res = make([]query.GroupLinkCount, 0)
-	for _, dto := range linkGidCountDTOs {
-		res = append(res, query.GroupLinkCount{
-			Gid:   dto.Gid,
-			Count: dto.Count,
-		})
-	}
-	return
-}
-
-// PageRecycleBin 分页查询回收站中的短链接
-func (q LinkQuery) PageRecycleBin(
-	ctx context.Context,
-	param query.PageRecycleBin,
-) (res *types.PageResp[query.Link], err error) {
-
-	r, err := q.linkDao.PageRecycleBin(ctx, param.Gids, param.Current, param.Size)
-	if err != nil {
-		return
-	}
-
-	res = types.ConvertRecords(r, func(dto dao.LinkDTO) (query.Link, error) {
-		lk := query.Link{}
-		if err = copier.Copy(&lk, &dto); err != nil {
-			return lk, err
-		}
-		return lk, nil
-	})
-
-	return
-}
-
-func (q LinkQuery) GetLinkWithoutStats(ctx context.Context, shortUri string) (lk *link.Link, err error) {
-	linkGotoPo := &po.LinkGoto{}
-	if linkGotoPo, err = q.linkDao.GetLinkGoto(ctx, shortUri); err != nil || linkGotoPo == nil {
-		return
-	}
-	linkPo := &po.Link{}
-	if linkPo, err = q.linkDao.GetLink(ctx, link.Identifier{
-		ShortUri: shortUri, Gid: linkGotoPo.Gid,
-	}); err != nil || linkPo == nil {
-		return
-	}
-
-	// 将持久化对象转换为领域模型
-	lk = &link.Link{}
-	validDate := &link.ValidDate{}
-	if validDate, err = link.NewValidDate(
-		linkPo.ValidType, linkPo.ValidStartDate, linkPo.ValidEndDate,
-	); err != nil {
-		return
-	}
-
-	lk, err = q.linkFactory.NewLinkFromDB(
-		linkPo.ID, linkPo.Gid, linkPo.ShortUri, linkPo.OriginalUrl, linkPo.Status,
-		linkPo.CreateType, linkPo.Favicon, linkPo.Desc, validDate, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return
-}

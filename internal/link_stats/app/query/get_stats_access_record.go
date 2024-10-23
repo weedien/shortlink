@@ -43,7 +43,7 @@ type GetLinkStatsAccessRecord struct {
 	// 结束日期
 	EndDate time.Time
 	// 启用标识
-	EnableStatus int
+	Status int
 }
 
 type GetLinkStatsAccessRecordReadModel interface {

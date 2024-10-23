@@ -27,11 +27,13 @@ func (f FactoryConfig) Validate() error {
 	}
 	for _, v := range f.Whitelist {
 		if !toolkit.IsValidDomain(v) {
-			err = errors.Join(err, errors.New("Whitelist domain should be valid, but is "+v))
+			err = errors.Join(err, errors.New("whitelist domain should be valid, but is "+v))
 		}
 	}
-	if toolkit.IsValidUrl(f.DefaultFavicon) {
-		err = errors.Join(err, errors.New("default favicon should be valid url"))
+	if f.DefaultFavicon == "" {
+		if !toolkit.IsValidUrl(f.DefaultFavicon) {
+			err = errors.Join(err, errors.New("default favicon should be valid url"))
+		}
 	}
 	if f.MaxAttempts < 1 {
 		err = errors.Join(
@@ -50,7 +52,7 @@ type Factory struct {
 
 func NewFactory(fc FactoryConfig) (*Factory, error) {
 	if err := fc.Validate(); err != nil {
-		return &Factory{}, errors.Join(err, errors.New("invalid config passed to factory"))
+		return &Factory{}, errors.Join(err, errors.New("invalid config passed to link factory"))
 	}
 
 	return &Factory{fc: fc}, nil
@@ -108,7 +110,6 @@ func (f Factory) NewAvailableLink(
 		validDate:    validDate,
 		desc:         desc,
 		favicon:      favicon,
-		stats:        NewInitStats(),
 	}, nil
 }
 
@@ -122,7 +123,6 @@ func (f Factory) NewLinkFromDB(
 	favicon string,
 	desc string,
 	validDate *ValidDate,
-	stats *Stats,
 ) (*Link, error) {
 	// 完整短链接
 	var fullShortUrl string
@@ -144,7 +144,6 @@ func (f Factory) NewLinkFromDB(
 		desc:         desc,
 		favicon:      favicon,
 		validDate:    validDate,
-		stats:        stats,
 	}, nil
 
 }

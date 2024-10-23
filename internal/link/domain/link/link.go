@@ -52,7 +52,18 @@ type Link struct {
 	desc         string
 	favicon      string
 	validDate    *ValidDate
-	stats        *Stats
+}
+
+func (lk Link) CreateType() int {
+	return lk.createType
+}
+
+func (lk Link) Gid() string {
+	return lk.gid
+}
+
+func (lk Link) Favicon() string {
+	return lk.favicon
 }
 
 func (lk Link) OriginalUrl() string {
@@ -78,42 +89,12 @@ func (lk Link) FullShortUrl() string {
 	return lk.fullShortUrl
 }
 
-func (lk Link) Stats() *Stats {
-	return lk.stats
-}
-
 func (lk Link) ValidDate() *ValidDate {
 	return lk.validDate
 }
 
-func unmarshalTrainingFromDatabase(
-	id int,
-	domain string,
-	shortUri string,
-	fullShortUrl string,
-	originalUrl string,
-	gid string,
-	status string,
-	createType int,
-	desc string,
-	favicon string,
-	validDate *ValidDate,
-	stats *Stats,
-) (*Link, error) {
-	return &Link{
-		id:           id,
-		domain:       domain,
-		shortUri:     shortUri,
-		fullShortUrl: fullShortUrl,
-		originalUrl:  originalUrl,
-		gid:          gid,
-		status:       status,
-		createType:   createType,
-		desc:         desc,
-		favicon:      favicon,
-		validDate:    validDate,
-		stats:        stats,
-	}, nil
+func (lk Link) Desc() string {
+	return lk.desc
 }
 
 // Update 更新短链接信息
@@ -151,9 +132,9 @@ func (lk Link) Update(
 	}
 	if validEndDate != nil {
 		if validEndDate.Before(time.Now()) {
-			return errors.New("endTime should be after startTime")
+			return errors.New("endDate should be after startDate")
 		}
-		lk.validDate.endTime = *validEndDate
+		lk.validDate.endDate = *validEndDate
 	}
 	if desc != nil {
 		lk.desc = *desc

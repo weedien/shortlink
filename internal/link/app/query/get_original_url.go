@@ -2,7 +2,7 @@ package query
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log/slog"
 	"reflect"
 	"shortlink/internal/common/base_event"
@@ -26,6 +26,7 @@ type GetOriginalUrlHandler decorator.QueryHandler[GetOriginalUrl, string]
 func NewGetOriginalUrlHandler(
 	readModel GetOriginalUrlReadModel,
 	eventBus base_event.EventBus,
+	distributedCache cache.DistributedCache,
 	logger *slog.Logger,
 	metrics metrics.Client,
 ) GetOriginalUrlHandler {
@@ -34,7 +35,7 @@ func NewGetOriginalUrlHandler(
 	}
 
 	return decorator.ApplyQueryDecorators[GetOriginalUrl, string](
-		getOriginalUrlHandler{readModel: readModel, eventBus: eventBus},
+		getOriginalUrlHandler{readModel: readModel, eventBus: eventBus, distributedCache: distributedCache},
 		logger,
 		metrics,
 	)
@@ -46,7 +47,7 @@ type GetOriginalUrl struct {
 }
 
 type GetOriginalUrlReadModel interface {
-	GetLinkWithoutStats(ctx context.Context, shortUri string) (*link.Link, error)
+	GetLink(ctx context.Context, shortUri string) (*link.Link, error)
 }
 
 func (h getOriginalUrlHandler) Handle(ctx context.Context, q GetOriginalUrl) (res string, err error) {
@@ -57,7 +58,7 @@ func (h getOriginalUrlHandler) Handle(ctx context.Context, q GetOriginalUrl) (re
 
 	fetchFn := func() (res interface{}, err error) {
 		lk := &link.Link{}
-		if lk, err = h.readModel.GetLinkWithoutStats(ctx, q.ShortUri); err != nil || lk == nil {
+		if lk, err = h.readModel.GetLink(ctx, q.ShortUri); err != nil || lk == nil {
 			return
 		}
 		originalUrl := lk.OriginalUrl()
@@ -67,7 +68,7 @@ func (h getOriginalUrlHandler) Handle(ctx context.Context, q GetOriginalUrl) (re
 		}
 		switch lk.Status() {
 		case link.StatusActive:
-			res = originalUrl
+			res = link.NewCacheValue(lk)
 			return
 		case link.StatusExpired:
 			err = error_no.LinkExpired
@@ -88,15 +89,23 @@ func (h getOriginalUrlHandler) Handle(ctx context.Context, q GetOriginalUrl) (re
 	result, err = h.distributedCache.SafeGetWithCacheCheckFilter(
 		ctx,
 		constant.GotoLinkKey+q.ShortUri,
-		reflect.TypeOf(""),
+		reflect.TypeOf(link.CacheValue{}),
 		fetchFn,
 		constant.NeverExpire,
 		cache.ShortUriCreateBloomFilter,
-		fmt.Sprintf(constant.GotoIsNullLinkKey, q.ShortUri),
+		q.ShortUri,
+		constant.GotoIsNullLinkKey+q.ShortUri,
 	)
 	if err != nil {
+		if errors.Is(err, error_no.RedisKeyNotExist) {
+			err = error_no.LinkNotExists
+		}
 		return
 	}
-	res = result.(string)
+
+	if cacheValue, ok := result.(*link.CacheValue); ok {
+		res = cacheValue.OriginalUrl
+	}
+
 	return
 }

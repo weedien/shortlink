@@ -7,9 +7,9 @@ import (
 
 const (
 	// ValidTypePermanent 永久有效
-	ValidTypePermanent = -1
+	ValidTypePermanent = 0
 	// ValidTypeTemporary 临时有效
-	ValidTypeTemporary = 0
+	ValidTypeTemporary = 1
 )
 
 func (lk Link) validateDate() error {
@@ -22,17 +22,33 @@ func (lk Link) validateDate() error {
 // ValidDate 有效期
 type ValidDate struct {
 	validType  int
-	startTime  time.Time
-	endTime    time.Time
+	startDate  time.Time
+	endDate    time.Time
 	hasExpired bool
+}
+
+func (v ValidDate) ValidType() int {
+	return v.validType
+}
+
+func (v ValidDate) HasExpired() bool {
+	return v.hasExpired
+}
+
+func (v ValidDate) StartDate() time.Time {
+	return v.startDate
+}
+
+func (v ValidDate) EndDate() time.Time {
+	return v.endDate
 }
 
 func NewValidDate(validType int, startTime, endTime time.Time) (*ValidDate, error) {
 	if validType != ValidTypePermanent && validType != ValidTypeTemporary {
 		return &ValidDate{}, errors.New("invalid validType")
 	}
-	if endTime.Before(startTime) {
-		return &ValidDate{}, errors.New("endTime should be after startTime")
+	if validType != ValidTypePermanent && endTime.Before(startTime) {
+		return &ValidDate{}, errors.New("endDate should be after startDate")
 	}
 	var hasExpired bool
 	if validType == ValidTypePermanent || endTime.After(time.Now()) {
@@ -43,18 +59,21 @@ func NewValidDate(validType int, startTime, endTime time.Time) (*ValidDate, erro
 
 	return &ValidDate{
 		validType:  validType,
-		startTime:  startTime,
-		endTime:    endTime,
+		startDate:  startTime,
+		endDate:    endTime,
 		hasExpired: hasExpired,
 	}, nil
 }
 
 func (v ValidDate) isValid() bool {
-	return v.validType == ValidTypePermanent || v.endTime.After(time.Now())
+	return v.validType == ValidTypePermanent || v.endDate.After(time.Now())
 }
 
 func (v ValidDate) Expiration() time.Duration {
-	return v.endTime.Sub(time.Now())
+	if v.validType == ValidTypePermanent {
+		return 0
+	}
+	return v.endDate.Sub(time.Now())
 }
 
 func (v ValidDate) NeverExpire() bool {
@@ -62,9 +81,9 @@ func (v ValidDate) NeverExpire() bool {
 }
 
 func (v ValidDate) StartTime() time.Time {
-	return v.startTime
+	return v.startDate
 }
 
 func (v ValidDate) EndTime() time.Time {
-	return v.endTime
+	return v.endDate
 }

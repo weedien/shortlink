@@ -48,11 +48,11 @@ type CreateLinkResult struct {
 	OriginalUrl  string
 }
 
-func (c CreateLink) ExecutionResult() *CreateLinkResult {
+func (c *CreateLink) ExecutionResult() *CreateLinkResult {
 	return c.result
 }
 
-type CreateLinkHandler decorator.CommandHandler[CreateLink]
+type CreateLinkHandler decorator.CommandHandler[*CreateLink]
 
 func NewCreateLinkHandler(
 	linkFactory *link.Factory,
@@ -68,7 +68,7 @@ func NewCreateLinkHandler(
 		panic("nil locker")
 	}
 
-	return decorator.ApplyCommandDecorators[CreateLink](
+	return decorator.ApplyCommandDecorators[*CreateLink](
 		createLinkHandler{repo: repo, locker: locker, linkFactory: linkFactory},
 		logger,
 		metrics,
@@ -77,7 +77,7 @@ func NewCreateLinkHandler(
 
 func (h createLinkHandler) Handle(
 	ctx context.Context,
-	cmd CreateLink,
+	cmd *CreateLink,
 ) (err error) {
 
 	// 获取分布式锁

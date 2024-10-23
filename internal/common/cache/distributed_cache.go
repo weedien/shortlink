@@ -59,6 +59,7 @@ type DistributedCache interface {
 		cacheLoader Loader,
 		expiration time.Duration,
 		bloomFilter string,
+		bloomKey string,
 	) (interface{}, error)
 
 	SafeGetWithCacheCheckFilter(
@@ -68,6 +69,7 @@ type DistributedCache interface {
 		cacheLoader Loader,
 		expiration time.Duration,
 		bloomFilter string,
+		bloomKey string,
 		exceptBloomKey string,
 	) (interface{}, error)
 
@@ -78,6 +80,7 @@ type DistributedCache interface {
 		cacheLoader Loader,
 		expiration time.Duration,
 		bloomFilter string,
+		bloomKey string,
 		exceptBloomKey string,
 		cacheGetIfAbsent GetIfAbsent,
 	) (interface{}, error)
@@ -89,6 +92,7 @@ type DistributedCache interface {
 		value any,
 		expiration time.Duration,
 		bloomFilter string,
+		bloomKey string,
 	) error
 
 	SafeDelete(ctx context.Context, key string, exceptBloomKey string) error

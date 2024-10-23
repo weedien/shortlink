@@ -53,7 +53,7 @@ func NewLinkApplication(
 		Queries: app.Queries{
 			PageLink:       query.NewPageLinkHandler(readModel, logger, metricsClient),
 			ListGroupCount: query.NewListGroupCountHandler(readModel, logger, metricsClient),
-			GetOriginalUrl: query.NewGetOriginalUrlHandler(readModel, eventBus, logger, metricsClient),
+			GetOriginalUrl: query.NewGetOriginalUrlHandler(readModel, eventBus, distributedCache, logger, metricsClient),
 		},
 	}
 

@@ -40,7 +40,7 @@ type GetLinkStats struct {
 	// 结束日期
 	EndDate time.Time
 	// 启用标识
-	EnableStatus int
+	Status string
 }
 
 type GetLinkStatsReadModel interface {

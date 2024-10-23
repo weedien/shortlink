@@ -46,7 +46,7 @@ GROUP BY
 `
 	var result []po.LinkAccessStat
 	err := d.db.WithContext(ctx).
-		Raw(rawSql, param.FullShortUrl, param.Gid, param.EnableStatus, param.StartDate, param.EndDate).Scan(&result).Error
+		Raw(rawSql, param.FullShortUrl, param.Gid, param.Status, param.StartDate, param.EndDate).Scan(&result).Error
 	return result, err
 }
 
@@ -95,7 +95,7 @@ GROUP BY
 `
 	var result []po.LinkAccessStat
 	err := d.db.WithContext(ctx).
-		Raw(rawSql, param.FullShortUrl, param.Gid, param.EnableStatus, param.StartDate, param.EndDate).Scan(&result).Error
+		Raw(rawSql, param.FullShortUrl, param.Gid, param.Status, param.StartDate, param.EndDate).Scan(&result).Error
 	return result, err
 }
 
@@ -142,7 +142,7 @@ GROUP BY
 `
 	var result []po.LinkAccessStat
 	err := d.db.WithContext(ctx).
-		Raw(rawSql, param.FullShortUrl, param.Gid, param.EnableStatus, param.StartDate, param.EndDate).Scan(&result).Error
+		Raw(rawSql, param.FullShortUrl, param.Gid, param.Status, param.StartDate, param.EndDate).Scan(&result).Error
 	return result, err
 }
 

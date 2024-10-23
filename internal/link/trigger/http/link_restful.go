@@ -1,10 +1,10 @@
 package http
 
 import (
-	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"github.com/jinzhu/copier"
+	"shortlink/internal/common/config"
 	"shortlink/internal/common/error_no"
 	"shortlink/internal/common/toolkit"
 	"shortlink/internal/link/app"
@@ -26,30 +26,32 @@ func NewLinkApi(app app.Application, router fiber.Router) {
 		app: app,
 	}
 
+	prefix := config.BaseRoutePrefix.String()
+
 	// 短链接未找到
 	router.All("/page/notfound", func(c *fiber.Ctx) error {
-		return c.SendFile("resources/notfound.html")
+		return c.SendFile("../../templates/notfound.html")
 	})
 	// 短链接跳转到原始链接
-	router.Get("/:short-uri", api.Redirect)
+	router.Get("/:shortUri", api.Redirect)
 	// 创建短链接
-	router.Post("/create", api.CreateLink)
+	router.Post(prefix+"/create", api.CreateLink)
 	// 通过分布式锁创建短链接
-	router.Post("/create/with-lock", api.CreateLinkWithLock)
+	router.Post(prefix+"/create/with-lock", api.CreateLinkWithLock)
 	// 批量创建短链接
-	router.Post("/create-batch", api.BatchCreateLink)
+	router.Post(prefix+"/create-batch", api.BatchCreateLink)
 	// 更新短链接
-	router.Put("/update", api.UpdateLink)
+	router.Put(prefix+"/update", api.UpdateLink)
 	// 分页查询短链接
-	router.Get("/page", api.PageQueryLink)
+	router.Get(prefix+"/page", api.PageQueryLink)
 	// 查询短链接分组内数量
-	router.Get("/group-count", api.ListGroupLinkCount)
+	router.Get(prefix+"/group-count", api.ListGroupLinkCount)
 }
 
 // Redirect 短链接跳转到原始链接
 func (h LinkApi) Redirect(c *fiber.Ctx) error {
 
-	shortUri := c.Params("short-uri")
+	shortUri := c.Params("shortUri")
 	if shortUri == "" {
 		return error_no.LinkNotExists
 	}
@@ -78,7 +80,7 @@ func (h LinkApi) Redirect(c *fiber.Ctx) error {
 	}
 
 	q := query.GetOriginalUrl{
-		ShortUri:      fmt.Sprintf("https://%s/%s", c.BaseURL(), shortUri),
+		ShortUri:      shortUri,
 		UserVisitInfo: userVisitInfo,
 	}
 
@@ -103,13 +105,13 @@ func (h LinkApi) CreateLink(c *fiber.Ctx) (err error) {
 		return err
 	}
 
-	cmd := command.CreateLink{
+	cmd := &command.CreateLink{
 		OriginalUrl:    reqParam.OriginalUrl,
 		Gid:            reqParam.Gid,
 		CreateType:     reqParam.CreateType,
 		ValidType:      reqParam.ValidType,
-		ValidStartDate: reqParam.StartDate,
-		ValidEndDate:   reqParam.EndDate,
+		ValidStartDate: reqParam.StartDate.ToTime(),
+		ValidEndDate:   reqParam.EndDate.ToTime(),
 		Desc:           reqParam.Desc,
 		WithLock:       false,
 	}
@@ -137,13 +139,13 @@ func (h LinkApi) CreateLinkWithLock(c *fiber.Ctx) (err error) {
 		return err
 	}
 
-	cmd := command.CreateLink{
+	cmd := &command.CreateLink{
 		OriginalUrl:    reqParam.OriginalUrl,
 		Gid:            reqParam.Gid,
 		CreateType:     reqParam.CreateType,
 		ValidType:      reqParam.ValidType,
-		ValidStartDate: reqParam.StartDate,
-		ValidEndDate:   reqParam.EndDate,
+		ValidStartDate: reqParam.StartDate.ToTime(),
+		ValidEndDate:   reqParam.EndDate.ToTime(),
 		Desc:           reqParam.Desc,
 		WithLock:       true,
 	}
@@ -177,8 +179,8 @@ func (h LinkApi) BatchCreateLink(c *fiber.Ctx) error {
 		Gid:            reqParam.Gid,
 		CreateType:     reqParam.CreateType,
 		ValidType:      reqParam.ValidType,
-		ValidStartDate: reqParam.StartDate,
-		ValidEndDate:   reqParam.EndDate,
+		ValidStartDate: reqParam.StartDate.ToTime(),
+		ValidEndDate:   reqParam.EndDate.ToTime(),
 	}
 
 	if err := h.app.Commands.CreateLinkBatch.Handle(c.Context(), cmd); err != nil {
@@ -211,8 +213,8 @@ func (h LinkApi) UpdateLink(c *fiber.Ctx) error {
 		Gid:            reqParam.Gid,
 		Status:         reqParam.Status,
 		ValidType:      reqParam.ValidType,
-		ValidStartDate: reqParam.StartDate,
-		ValidEndDate:   reqParam.EndDate,
+		ValidStartDate: reqParam.StartDate.ToTime(),
+		ValidEndDate:   reqParam.EndDate.ToTime(),
 		Desc:           reqParam.Desc,
 	})
 	if err != nil {
