@@ -10,7 +10,7 @@ const TableNameLinkBrowserStat = "link_browser_stats"
 // LinkBrowserStat mapped from table <link_browser_stats>
 type LinkBrowserStat struct {
 	ID             int            `gorm:"column:id;primaryKey;autoIncrement:true;comment:ID" json:"id"`                 // ID
-	FullShortUrl   string         `gorm:"column:full_short_url;not null;comment:完整短链接" json:"full_short_url"`           // 完整短链接
+	ShortUri       string         `gorm:"column:short_uri;not null;comment:短链接" json:"short_uri"`                       // 完整短链接
 	Date           time.Time      `gorm:"column:date;default:CURRENT_DATE;comment:日期" json:"date"`                      // 日期
 	Cnt            int            `gorm:"column:cnt;comment:访问量" json:"cnt"`                                            // 访问量
 	Browser        string         `gorm:"column:browser;comment:浏览器，Edge,Chrome,FireFox" json:"browser"`                // 浏览器，Edge,Chrome,FireFox

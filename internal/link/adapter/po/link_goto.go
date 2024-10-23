@@ -15,7 +15,7 @@ const TableNameLinkGoto = "link_goto"
 type LinkGoto struct {
 	ID         int            `gorm:"column:id;primaryKey;autoIncrement:true;comment:ID" json:"id"`
 	Gid        string         `gorm:"column:gid;not null;comment:分组标识" json:"gid"`
-	ShortUri   string         `gorm:"column:short_uri;not null;comment:完整短链接" json:"short_uri"`
+	ShortUri   string         `gorm:"column:short_uri;not null;comment:短链接" json:"short_uri"`
 	DeleteTime gorm.DeletedAt `gorm:"column:delete_time;comment:删除时间" json:"delete_time"`
 }
 
