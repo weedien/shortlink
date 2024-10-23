@@ -5,10 +5,10 @@ import (
 	"time"
 )
 
-const TableNameLinkStatToday = "link_stats_today"
+const TableNameLinkStatsToday = "link_stats_today"
 
-// LinkStatToday mapped from table <link_stats_today>
-type LinkStatToday struct {
+// LinkStatsToday mapped from table <link_stats_today>
+type LinkStatsToday struct {
 	ID           int            `gorm:"column:id;primaryKey;autoIncrement:true;comment:ID" json:"id"`                 // ID
 	FullShortUrl string         `gorm:"column:full_short_url;not null;comment:短链接" json:"full_short_url"`             // 短链接
 	Date         time.Time      `gorm:"column:date;not null;default:CURRENT_DATE;comment:日期" json:"date"`             // 日期
@@ -20,7 +20,7 @@ type LinkStatToday struct {
 	DeleteTime   gorm.DeletedAt `gorm:"column:delete_time;comment:删除时间" json:"delete_time"`                           // 删除时间
 }
 
-// TableName LinkStatToday's table name
-func (*LinkStatToday) TableName() string {
-	return TableNameLinkStatToday
+// TableName LinkStatsToday's table name
+func (*LinkStatsToday) TableName() string {
+	return TableNameLinkStatsToday
 }

@@ -41,8 +41,8 @@ func (r LinkRepository) ShortUriExists(ctx context.Context, shortUri string) (bo
 	return r.distributedCache.ExistsInBloomFilter(
 		ctx,
 		cache.ShortUriCreateBloomFilter,
-		constant.LockGotoShortLinkKey+shortUri,
-		constant.GotoIsNullShortLinkKey+shortUri,
+		constant.LockGotoLinkKey+shortUri,
+		constant.GotoIsNullLinkKey+shortUri,
 	)
 }
 
@@ -51,7 +51,7 @@ func (r LinkRepository) ShortUriExists(ctx context.Context, shortUri string) (bo
 //	shortUri string,
 //) (status int, res string, err error) {
 //	// 尝试从缓存中获取短链的原始链接，存在则直接返回
-//	value := r.rdb.Get(ctx, fmt.Sprintf(constant.GotoShortLinkKey, shortUri)).String()
+//	value := r.rdb.Get(ctx, fmt.Sprintf(constant.GotoLinkKey, shortUri)).String()
 //	if value != "" {
 //		return value, nil
 //	}
@@ -63,18 +63,18 @@ func (r LinkRepository) ShortUriExists(ctx context.Context, shortUri string) (bo
 //	}
 //	if !exists {
 //		// TODO 应用层需要处理这个错误，返回 404
-//		return "", error_no.NewServiceError(error_no.ShortLinkNotExists)
+//		return "", error_no.NewServiceError(error_no.LinkNotExists)
 //	}
 //
-//	// 从缓存中获取 GotoIsNullShortLink 的值，如果存在则意味着短链接失效，返回 not found
-//	gotoIsNullShortLink := r.rdb.Get(ctx, fmt.Sprintf(constant.GotoIsNullShortLinkKey, shortUri)).String()
-//	if gotoIsNullShortLink != "" {
+//	// 从缓存中获取 GotoIsNullLink 的值，如果存在则意味着短链接失效，返回 not found
+//	gotoIsNullLink := r.rdb.Get(ctx, fmt.Sprintf(constant.GotoIsNullLinkKey, shortUri)).String()
+//	if gotoIsNullLink != "" {
 //		// TODO 应用层需要处理这个错误，返回 404
-//		return "", error_no.NewServiceError(error_no.ShortLinkNotExists)
+//		return "", error_no.NewServiceError(error_no.LinkNotExists)
 //	}
 //
 //	// 获取分布式锁，并进行二次锁判定，尝试从数据库中获取原始链接，并写入缓存
-//	lockKey := fmt.Sprintf(constant.LockGotoShortLinkKey, shortUri)
+//	lockKey := fmt.Sprintf(constant.LockGotoLinkKey, shortUri)
 //	_, err = r.locker.Acquire(ctx, lockKey, time.Second)
 //	if errors.Is(err, redislock.ErrNotObtained) {
 //		return "", error_no.NewExternalErrorWithMsg(error_no.RedisError, "获取锁失败")
@@ -90,15 +90,15 @@ func (r LinkRepository) ShortUriExists(ctx context.Context, shortUri string) (bo
 //	// 第一个线程执行结束后，其他线程再次尝试获取锁，此时缓存中已经有值，直接返回
 //	// TODO: 优化方案，可以使用分布式锁的续租功能，避免锁过期导致的缓存击穿
 //	// TODO: 目前我是以Java的思维来写的，Go的锁机制可能有更好的解决方案
-//	value = r.rdb.Get(ctx, fmt.Sprintf(constant.GotoShortLinkKey, shortUri)).String()
+//	value = r.rdb.Get(ctx, fmt.Sprintf(constant.GotoLinkKey, shortUri)).String()
 //	if value != "" {
 //		return value, nil
 //	}
 //
-//	gotoIsNullShortLink = r.rdb.Get(ctx, fmt.Sprintf(constant.GotoIsNullShortLinkKey, shortUri)).String()
-//	if gotoIsNullShortLink != "" {
+//	gotoIsNullLink = r.rdb.Get(ctx, fmt.Sprintf(constant.GotoIsNullLinkKey, shortUri)).String()
+//	if gotoIsNullLink != "" {
 //		// TODO 应用层需要处理这个错误，返回 404
-//		return "", error_no.NewServiceError(error_no.ShortLinkNotExists)
+//		return "", error_no.NewServiceError(error_no.LinkNotExists)
 //	}
 //
 //	// 查询数据库
@@ -112,9 +112,9 @@ func (r LinkRepository) ShortUriExists(ctx context.Context, shortUri string) (bo
 //	}
 //	// 数据库中不存在这个短链接
 //	if linkGoto.FullShortUrl == "" {
-//		r.rdb.SetEx(ctx, fmt.Sprintf(constant.GotoIsNullShortLinkKey, shortUri), "-", 30*time.Minute)
+//		r.rdb.SetEx(ctx, fmt.Sprintf(constant.GotoIsNullLinkKey, shortUri), "-", 30*time.Minute)
 //		// TODO 应用层需要处理这个错误，返回 404
-//		return "", error_no.NewServiceError(error_no.ShortLinkNotExists)
+//		return "", error_no.NewServiceError(error_no.LinkNotExists)
 //	}
 //	// 数据库中存在短链接，则查询link表获取原始链接
 //	var link po.Link
@@ -128,12 +128,12 @@ func (r LinkRepository) ShortUriExists(ctx context.Context, shortUri string) (bo
 //	// 短链接失效
 //	if link.FullShortUrl == "" || link.ValidDate.Before(time.Now()) {
 //		// 写入缓存
-//		r.rdb.SetEx(ctx, fmt.Sprintf(constant.GotoIsNullShortLinkKey, shortUri), "-", 30*time.Minute)
+//		r.rdb.SetEx(ctx, fmt.Sprintf(constant.GotoIsNullLinkKey, shortUri), "-", 30*time.Minute)
 //		// TODO 应用层需要处理这个错误，返回 404
-//		return "", error_no.NewServiceError(error_no.ShortLinkNotExists)
+//		return "", error_no.NewServiceError(error_no.LinkNotExists)
 //	}
 //	// 查询到有效的原始链接，写入缓存
-//	err = r.rdb.SetEx(ctx, fmt.Sprintf(constant.GotoShortLinkKey, shortUri), link.OriginUrl, toolkit.GetLinkCacheExpiration(link.ValidDate)).Err()
+//	err = r.rdb.SetEx(ctx, fmt.Sprintf(constant.GotoLinkKey, shortUri), link.OriginUrl, toolkit.GetLinkCacheExpiration(link.ValidDate)).Err()
 //	if err != nil {
 //		return "", error_no.NewExternalErrorWithMsg(error_no.RedisError, err.Error())
 //	}
@@ -141,9 +141,9 @@ func (r LinkRepository) ShortUriExists(ctx context.Context, shortUri string) (bo
 //}
 
 // RecordLinkVisitInfo 记录短链接访问信息
-//func (r LinkRepository) RecordLinkVisitInfo(ctx context.Context, info valobj.ShortLinkStatsRecordVo) error {
+//func (r LinkRepository) RecordLinkVisitInfo(ctx context.Context, info valobj.LinkStatssRecordVo) error {
 //	// 确定两个值的信息，uvFirstFlag 和 uipFirstFlag
-//	uvAdded, err := r.rdb.SAdd(ctx, consts.ShortLinkStatUvKey+info.ShortUri, info.UV).Result()
+//	uvAdded, err := r.rdb.SAdd(ctx, consts.LinkStatsUvKey+info.ShortUri, info.UV).Result()
 //	if err != nil {
 //		return err
 //	}
@@ -151,7 +151,7 @@ func (r LinkRepository) ShortUriExists(ctx context.Context, shortUri string) (bo
 //		info.UVFirstFlag = true
 //	}
 //
-//	uipAdded, err := r.rdb.SAdd(ctx, consts.ShortLinkStatUipKey+info.ShortUri, info.RemoteAddr).Result()
+//	uipAdded, err := r.rdb.SAdd(ctx, consts.LinkStatsUipKey+info.ShortUri, info.RemoteAddr).Result()
 //	if err != nil {
 //		return err
 //	}
@@ -188,7 +188,7 @@ func (r LinkRepository) CreateLink(ctx context.Context, lk *link.Link) (err erro
 			//if errors.Is(err, gorm.ErrDuplicatedKey) {
 			//	// 添加到布隆过滤器
 			//	if err = r.rdb.BFAdd(ctx, cache.ShortUriCreateBloomFilter, shortUri).Err(); err != nil {
-			//		return error_no.NewServiceErrorWithMsg(error_no.ShortLinkDuplicateInsert, err.Error())
+			//		return error_no.NewServiceErrorWithMsg(error_no.LinkDuplicateInsert, err.Error())
 			//	}
 			//}
 			return err
@@ -204,7 +204,7 @@ func (r LinkRepository) CreateLink(ctx context.Context, lk *link.Link) (err erro
 
 	err = r.distributedCache.SafePut(
 		ctx,
-		constant.GotoShortLinkKey+lk.ShortUri(),
+		constant.GotoLinkKey+lk.ShortUri(),
 		link.NewCacheValue(lk),
 		lk.ValidDate().Expiration(),
 		cache.ShortUriCreateBloomFilter,
@@ -229,7 +229,7 @@ func (r LinkRepository) CreateLinkBatch(ctx context.Context, links []*link.Link)
 		for _, lk := range links {
 			err := r.distributedCache.SafePut(
 				ctx,
-				constant.GotoShortLinkKey+lk.ShortUri(),
+				constant.GotoLinkKey+lk.ShortUri(),
 				link.NewCacheValue(lk),
 				lk.ValidDate().Expiration(),
 				cache.ShortUriCreateBloomFilter,
@@ -282,11 +282,11 @@ func (r LinkRepository) UpdateLink(
 			if err = tx.WithContext(ctx).Delete(&linkPo).Error; err != nil {
 				return err
 			}
-			oldShortLinkGotoPo := po.LinkGoto{
+			oldLinkGotoPo := po.LinkGoto{
 				Gid:      linkPo.Gid,
 				ShortUri: linkPo.FullShortUrl,
 			}
-			if err = tx.WithContext(ctx).Delete(oldShortLinkGotoPo).Error; err != nil {
+			if err = tx.WithContext(ctx).Delete(oldLinkGotoPo).Error; err != nil {
 				return err
 			}
 
@@ -317,7 +317,7 @@ func (r LinkRepository) UpdateLink(
 	// 更新缓存
 	err = r.distributedCache.Put(
 		ctx,
-		constant.GotoShortLinkKey+lk.ShortUri(),
+		constant.GotoLinkKey+lk.ShortUri(),
 		link.NewCacheValue(lk),
 		lk.ValidDate().Expiration(),
 	)
@@ -353,13 +353,13 @@ func (r LinkRepository) SaveToRecycleBin(
 	})
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return error_no.ShortLinkNotExists
+			return error_no.LinkNotExists
 		}
 		return err
 	}
 
 	// 修改缓存中的状态为已删除
-	cacheKey := constant.GotoShortLinkKey + id.ShortUri
+	cacheKey := constant.GotoLinkKey + id.ShortUri
 	if err = r.modifyCacheValueStatus(ctx, cacheKey, link.StatusDeleted); err != nil {
 		return
 	}
@@ -379,14 +379,14 @@ func (r LinkRepository) RemoveFromRecycleBin(
 			Find(&linkPo).Error
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return error_no.ShortLinkNotExists
+				return error_no.LinkNotExists
 			}
 			return err
 		}
 
 		//如果短链接状态不是回收站状态，返回错误
 		if !linkPo.RecycleTime.Valid {
-			return error_no.InvalidLinkStatus
+			return error_no.InvalidLinkStatsus
 		}
 
 		err = r.db.Delete(&linkPo).Error
@@ -395,8 +395,8 @@ func (r LinkRepository) RemoveFromRecycleBin(
 
 	// 删除缓存
 	err = r.distributedCache.SafeDelete(
-		ctx, constant.GotoShortLinkKey+id.ShortUri,
-		constant.GotoIsNullShortLinkKey+id.ShortUri,
+		ctx, constant.GotoLinkKey+id.ShortUri,
+		constant.GotoIsNullLinkKey+id.ShortUri,
 	)
 	if err != nil {
 		return err
@@ -418,14 +418,14 @@ func (r LinkRepository) RecoverFromRecycleBin(
 			Find(&linkPo).Error
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return error_no.ShortLinkNotExists
+				return error_no.LinkNotExists
 			}
 			return
 		}
 
 		// 如果短链接状态不是回收站状态，返回错误
 		if !linkPo.RecycleTime.Valid {
-			return error_no.InvalidLinkStatus
+			return error_no.InvalidLinkStatsus
 		}
 
 		// 修改
@@ -438,7 +438,7 @@ func (r LinkRepository) RecoverFromRecycleBin(
 		return
 	}
 
-	cacheKey := constant.GotoShortLinkKey + id.ShortUri
+	cacheKey := constant.GotoLinkKey + id.ShortUri
 	if err = r.modifyCacheValueStatus(ctx, cacheKey, linkPo.Status); err != nil {
 		return
 	}

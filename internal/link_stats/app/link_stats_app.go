@@ -7,8 +7,8 @@ type Application struct {
 }
 
 type Queries struct {
-	GetLinkStat               query.GetLinkStatHandler
-	GroupLinkStat             query.GroupLinkStatHandler
-	GetLinkStatAccessRecord   query.GetLinkStatAccessRecordHandler
-	GroupLinkStatAccessRecord query.GroupLinkStatAccessRecordHandler
+	GetLinkStats               query.GetLinkStatsHandler
+	GroupLinkStats             query.GroupLinkStatsHandler
+	GetLinkStatsAccessRecord   query.GetLinkStatsAccessRecordHandler
+	GroupLinkStatsAccessRecord query.GroupLinkStatsAccessRecordHandler
 }

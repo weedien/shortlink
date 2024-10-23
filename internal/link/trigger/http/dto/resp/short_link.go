@@ -4,8 +4,8 @@ import (
 	"time"
 )
 
-// ShortLinkCreateResp 短链接创建响应
-type ShortLinkCreateResp struct {
+// LinkCreateResp 短链接创建响应
+type LinkCreateResp struct {
 	// 分组标识
 	Gid string `json:"gid"`
 	// 原始链接
@@ -14,26 +14,26 @@ type ShortLinkCreateResp struct {
 	FullShortUrl string `json:"fullShortUrl"`
 }
 
-// ShortLinkBatchCreateResp 短链接批量创建响应
-type ShortLinkBatchCreateResp struct {
+// LinkBatchCreateResp 短链接批量创建响应
+type LinkBatchCreateResp struct {
 	// 成功数量
 	SuccessCount int `json:"successCount"`
 	// 批量创建返回参数
-	LinkInfos []ShortLinkBaseInfoDTO `json:"linkInfos"`
+	LinkInfos []LinkBaseInfoDTO `json:"linkInfos"`
 }
 
-// ShortLinkGroupCountQueryResp 短链接分组数量查询响应
-type ShortLinkGroupCountQueryResp []GroupCountDTO
+// LinkGroupCountQueryResp 短链接分组数量查询响应
+type LinkGroupCountQueryResp []GroupCountDTO
 
 type GroupCountDTO struct {
 	// 分组标识
 	Gid string `json:"gid"`
 	// 短链接数量
-	ShortLinkCount int `json:"shortLinkCount"`
+	LinkCount int `json:"shortLinkCount"`
 }
 
-// ShortLinkPageResp 短链接分页查询响应
-type ShortLinkPageResp struct {
+// LinkPageResp 短链接分页查询响应
+type LinkPageResp struct {
 	// ID
 	ID int64 `json:"id"`
 	// 域名
@@ -72,8 +72,8 @@ type ShortLinkPageResp struct {
 	TodayUip int `json:"todayUip"`
 }
 
-// ShortLinkBaseInfoDTO 短链接基本信息响应
-type ShortLinkBaseInfoDTO struct {
+// LinkBaseInfoDTO 短链接基本信息响应
+type LinkBaseInfoDTO struct {
 	// 原始链接
 	OriginalUrl string `json:"originalUrl"`
 	// 短链接

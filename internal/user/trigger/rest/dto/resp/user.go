@@ -39,11 +39,11 @@ type UserActualResp struct {
 	Mail     string `json:"mail"`
 }
 
-type ShortLinkGroupResp []ShortLinkGroupDTO
+type LinkGroupResp []LinkGroupDTO
 
-type ShortLinkGroupDTO struct {
-	Gid            string `json:"gid"`
-	Name           string `json:"name"`
-	SortOrder      int    `json:"sort_order"`
-	ShortLinkCount int    `json:"short_link_count"`
+type LinkGroupDTO struct {
+	Gid       string `json:"gid"`
+	Name      string `json:"name"`
+	SortOrder int    `json:"sort_order"`
+	LinkCount int    `json:"short_link_count"`
 }

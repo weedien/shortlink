@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/gofiber/fiber/v2"
 	"golang.org/x/exp/slog"
 	"os"
 	"os/signal"
@@ -33,13 +32,13 @@ func main() {
 	eventBus := mq.NewRocketMqBasedEventBus(context.Background()) // EventBus
 
 	// 创建应用服务
-	shortLinkApp := linkservice.NewShortLinkApplication(db, rdb, locker, eventBus)
-	shortLinkStatApp := linkstatsservice.NewShortLinkStatApplication(db)
+	shortLinkApp := linkservice.NewLinkApplication(db, rdb, locker, eventBus)
+	shortLinkStatsApp := linkstatsservice.NewLinkStatsApplication(db)
 
 	shutdownServer := server.RunHttpServerOnPort(config.Port.String(), func(router fiber.Router) {
 		server.NewUriTitleApi(router)
-		linktrigger.NewShortLinkApi(shortLinkApp, router)
-		linkstatstrigger.NewShortLinkStatApi(shortLinkStatApp, router)
+		linktrigger.NewLinkApi(shortLinkApp, router)
+		linkstatstrigger.NewLinkStatsApi(shortLinkStatsApp, router)
 	})
 
 	c := make(chan os.Signal, 1)

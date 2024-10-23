@@ -187,17 +187,17 @@ func (c CacheValue) Validate() (bool, error) {
 		if c.ValidStartTime.Before(time.Now()) && c.ValidEndTime.After(time.Now()) {
 			return true, nil
 		}
-		return false, error_no.ShortLinkExpired
+		return false, error_no.LinkExpired
 	}
 	switch {
 	case c.Status == StatusReserved:
-		return false, error_no.ShortLinkReserved
+		return false, error_no.LinkReserved
 	case c.Status == StatusForbidden:
-		return false, error_no.ShortLinkForbidden
+		return false, error_no.LinkForbidden
 	case c.Status == StatusDisabled:
-		return false, error_no.ShortLinkDisabled
+		return false, error_no.LinkDisabled
 	case c.Status == StatusExpired:
-		return false, error_no.ShortLinkExpired
+		return false, error_no.LinkExpired
 	}
 	return false, nil
 }

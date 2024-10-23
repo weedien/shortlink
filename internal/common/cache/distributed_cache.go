@@ -97,4 +97,6 @@ type DistributedCache interface {
 
 	// CountExistingKeys counts the number of existing keys
 	CountExistingKeys(ctx context.Context, keys ...string) (int, error)
+
+	DoubleDelete(ctx context.Context, key string, delay time.Duration) error
 }

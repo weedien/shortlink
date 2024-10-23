@@ -1,8 +1,13 @@
 package event
 
-import "time"
+import (
+	"shortlink/internal/common/base_event"
+	"time"
+)
 
 type UserVisitInfo struct {
+	// 短链接
+	ShortUri string `json:"shortUri"`
 	// 完整短链接
 	FullShortUrl string `json:"fullShortUrl"`
 	// 访问用户IP
@@ -25,4 +30,20 @@ type UserVisitInfo struct {
 	Keys string `json:"keys"`
 	// 当前时间
 	CurrentDate time.Time `json:"currentDate"`
+}
+
+type UserVisitEvent struct {
+	base_event.CommonEvent
+	VisitInfo UserVisitInfo
+}
+
+func (e UserVisitEvent) Name() string {
+	return "UserVisitEvent"
+}
+
+func NewUserVisitEvent(recordInfo UserVisitInfo) UserVisitEvent {
+	return UserVisitEvent{
+		CommonEvent: base_event.NewCommonEvent(),
+		VisitInfo:   recordInfo,
+	}
 }

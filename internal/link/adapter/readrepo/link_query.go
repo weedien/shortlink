@@ -35,7 +35,7 @@ func NewLinkQuery(db *gorm.DB, factory *link.Factory) LinkQuery {
 //	}
 //
 //	// 尝试从缓存中获取短链的原始链接，存在则直接返回
-//	key := fmt.Sprintf(constant.GotoShortLinkKey, shortUri)
+//	key := fmt.Sprintf(constant.GotoLinkKey, shortUri)
 //	originalUrl, err := getFromCache(key)
 //	if err != nil {
 //		return "", err
@@ -50,21 +50,21 @@ func NewLinkQuery(db *gorm.DB, factory *link.Factory) LinkQuery {
 //		return "", err
 //	}
 //	if !exists {
-//		return "", error_no.ShortLinkNotExists
+//		return "", error_no.LinkNotExists
 //	}
 //
-//	// 从缓存中获取 GotoIsNullShortLink 的值，如果存在则意味着短链接失效，返回 not found
-//	key = fmt.Sprintf(constant.GotoIsNullShortLinkKey, shortUri)
-//	gotoIsNullShortLink, err := getFromCache(key)
+//	// 从缓存中获取 GotoIsNullLink 的值，如果存在则意味着短链接失效，返回 not found
+//	key = fmt.Sprintf(constant.GotoIsNullLinkKey, shortUri)
+//	gotoIsNullLink, err := getFromCache(key)
 //	if err != nil {
 //		return "", err
 //	}
-//	if gotoIsNullShortLink != "" {
-//		return "", error_no.ShortLinkExpired
+//	if gotoIsNullLink != "" {
+//		return "", error_no.LinkExpired
 //	}
 //
 //	// 获取分布式锁，并进行二次锁判定，尝试从数据库中获取原始链接，并写入缓存
-//	lockKey := fmt.Sprintf(constant.LockGotoShortLinkKey, shortUri)
+//	lockKey := fmt.Sprintf(constant.LockGotoLinkKey, shortUri)
 //	_, err = q.locker.Acquire(ctx, lockKey, constant.DefaultTimeOut)
 //	if errors.Is(err, redislock.ErrNotObtained) {
 //		return "", error_no.LockAcquireFailed
@@ -80,16 +80,16 @@ func NewLinkQuery(db *gorm.DB, factory *link.Factory) LinkQuery {
 //	// 第一个线程执行结束后，其他线程再次尝试获取锁，此时缓存中已经有值，直接返回
 //	// TODO: 优化方案，可以使用分布式锁的续租功能，避免锁过期导致的缓存击穿
 //	// TODO: 目前我是以Java的思维来写的，Go的锁机制可能有更好的解决方案
-//	key = fmt.Sprintf(constant.GotoShortLinkKey, shortUri)
+//	key = fmt.Sprintf(constant.GotoLinkKey, shortUri)
 //	originalUrl = q.rdb.Get(ctx, key).String()
 //	if originalUrl != "" {
 //		return originalUrl, nil
 //	}
 //
-//	key = fmt.Sprintf(constant.GotoIsNullShortLinkKey, shortUri)
-//	gotoIsNullShortLink = q.rdb.Get(ctx, key).String()
-//	if gotoIsNullShortLink != "" {
-//		return "", error_no.ShortLinkExpired
+//	key = fmt.Sprintf(constant.GotoIsNullLinkKey, shortUri)
+//	gotoIsNullLink = q.rdb.Get(ctx, key).String()
+//	if gotoIsNullLink != "" {
+//		return "", error_no.LinkExpired
 //	}
 //
 //	// 当短链接存在且有效时 返回 true, originalUrl, nil
@@ -116,9 +116,9 @@ func NewLinkQuery(db *gorm.DB, factory *link.Factory) LinkQuery {
 //	}
 //	// 数据库中不存在这个短链接
 //	if linkGotoPo == nil {
-//		key = fmt.Sprintf(constant.GotoIsNullShortLinkKey, shortUri)
+//		key = fmt.Sprintf(constant.GotoIsNullLinkKey, shortUri)
 //		q.rdb.SetEx(ctx, key, "-", constant.DefaultExpiration)
-//		return "", error_no.ShortLinkNotExists
+//		return "", error_no.LinkNotExists
 //	}
 //	// 数据库中存在短链接，则查询link表获取原始链接
 //	linkPo, err := q.linkDao.GetLink(ctx, link.Identifier{ShortUri: shortUri, Gid: linkGotoPo.Gid})
@@ -128,12 +128,12 @@ func NewLinkQuery(db *gorm.DB, factory *link.Factory) LinkQuery {
 //	// 短链接为空或者已经过期
 //	if linkPo == nil || linkPo.ValidEndTime.Before(time.Now()) {
 //		// 写入缓存
-//		key = fmt.Sprintf(constant.GotoIsNullShortLinkKey, shortUri)
+//		key = fmt.Sprintf(constant.GotoIsNullLinkKey, shortUri)
 //		q.rdb.SetEx(ctx, key, "-", constant.DefaultExpiration)
-//		return "", error_no.ShortLinkExpired
+//		return "", error_no.LinkExpired
 //	}
 //	// 查询到有效的原始链接，写入缓存
-//	key = fmt.Sprintf(constant.GotoShortLinkKey, shortUri)
+//	key = fmt.Sprintf(constant.GotoLinkKey, shortUri)
 //	err = q.rdb.SetEx(ctx, key, linkPo.OriginalUrl, toolkit.GetLinkCacheExpiration(linkPo.ValidEndTime)).Err()
 //	if err != nil {
 //		return "", err
@@ -170,7 +170,7 @@ func NewLinkQuery(db *gorm.DB, factory *link.Factory) LinkQuery {
 //		return val, err
 //	}
 //	if !exists {
-//		return val, error_no.ShortLinkNotExists
+//		return val, error_no.LinkNotExists
 //	}
 //	// case2: bloom filter 中存在 但失效缓存中也存在 则数据已失效
 //	if cacheVal, err = q.rdb.Get(ctx, exceptKey).Result(); err != nil {
@@ -182,7 +182,7 @@ func NewLinkQuery(db *gorm.DB, factory *link.Factory) LinkQuery {
 //		}
 //	} else {
 //		// 数据已失效
-//		return val, error_no.ShortLinkExpired
+//		return val, error_no.LinkExpired
 //	}
 //
 //	// step3: 获取分布式锁
@@ -202,7 +202,7 @@ func NewLinkQuery(db *gorm.DB, factory *link.Factory) LinkQuery {
 //	// 双重判断，防止缓存击穿
 //	if cacheVal, err = q.rdb.Get(ctx, cacheKey).Result(); err != nil {
 //		if errors.Is(err, redis.Nil) {
-//			return val, error_no.ShortLinkNotExists
+//			return val, error_no.LinkNotExists
 //		} else {
 //			return val, errors.Join(err, error_no.RedisError)
 //		}
@@ -221,7 +221,7 @@ func NewLinkQuery(db *gorm.DB, factory *link.Factory) LinkQuery {
 //		}
 //	} else {
 //		// 数据已失效
-//		return val, error_no.ShortLinkExpired
+//		return val, error_no.LinkExpired
 //	}
 //
 //	// 从数据库中获取
@@ -286,7 +286,7 @@ func (q LinkQuery) PageRecycleBin(
 	param query.PageRecycleBin,
 ) (res *types.PageResp[query.Link], err error) {
 
-	r, err := q.linkDao.PageRecycleBin(ctx, param.GidList, param.Current, param.Size)
+	r, err := q.linkDao.PageRecycleBin(ctx, param.Gids, param.Current, param.Size)
 	if err != nil {
 		return
 	}

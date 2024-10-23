@@ -14,8 +14,8 @@ func NewLinkAccessStatDao(db *gorm.DB) LinkAccessStatDao {
 	return LinkAccessStatDao{db: db}
 }
 
-//// LinkStat 记录基础访问监控数据
-//func (m *LinkAccessStatDao) LinkStat(LinkAccessStat po.LinkAccessStat) error {
+//// LinkStats 记录基础访问监控数据
+//func (m *LinkAccessStatDao) LinkStats(LinkAccessStat po.LinkAccessStat) error {
 //	rawSql := `
 //INSERT INTO t_link_access_stats (full_short_url, date, pv, uv, uip, hour, weekday, create_time, update_time, del_flag)
 //VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), 0)

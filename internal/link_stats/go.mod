@@ -2,7 +2,10 @@ module shortlink/internal/link_stats
 
 go 1.23.0
 
-replace shortlink/internal/common => ../common
+replace (
+	shortlink/internal/common => ../common
+	shortlink/internal/link => ../link 	// 只应该依赖 link 模块的 domain 层
+)
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.5
@@ -10,6 +13,7 @@ require (
 	github.com/redis/go-redis/v9 v9.6.1
 	gorm.io/gorm v1.25.11
 	shortlink/internal/common v0.0.0-00010101000000-000000000000
+	shortlink/internal/link v0.0.0-00010101000000-000000000000
 )
 
 require (

@@ -82,7 +82,7 @@ func (h createLinkHandler) Handle(
 
 	// 获取分布式锁
 	if cmd.WithLock {
-		lockKey := fmt.Sprintf(constant.ShortLinkCreateLockKey, cmd.OriginalUrl)
+		lockKey := fmt.Sprintf(constant.LinkCreateLockKey, cmd.OriginalUrl)
 		if _, err = h.locker.Acquire(ctx, lockKey, constant.DefaultTimeOut); err != nil {
 			return
 		}

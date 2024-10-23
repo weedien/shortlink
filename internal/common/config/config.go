@@ -23,7 +23,7 @@ var (
 	EnableSharding       = configWithDefault{"ENABLE_SHARDING", "false"}
 	BaseRoutePrefix      = configWithDefault{"BASE_ROUTE_PREFIX", "/api/short-link/v1"}
 	Port                 = configWithDefault{"PORT", "8080"}
-	ShortLinkDomain      = configWithDefault{"SHORT_LINK_DOMAIN", "http://localhost:8080"}
+	LinkDomain           = configWithDefault{"SHORT_LINK_DOMAIN", "http://localhost:8080"}
 	EnableWhiteList      = configWithDefault{"ENABLE_WHITE_LIST", "false"}
 	DomainWhiteList      = configWithDefault{"DOMAIN_WHITE_LIST", ""}
 	DomainWhiteListNames = configWithDefault{"DOMAIN_WHITE_LIST_NAMES", "掘金,知乎,简书,博客园,CSDN,开源中国,SegmentFault,思否,博客,博客园,博客园首页,博客首页,博客园博客"}

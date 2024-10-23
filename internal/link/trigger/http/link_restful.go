@@ -10,19 +10,19 @@ import (
 	"shortlink/internal/link/app"
 	"shortlink/internal/link/app/command"
 	"shortlink/internal/link/app/query"
-	"shortlink/internal/link/domain/link"
+	"shortlink/internal/link/domain/event"
 	"shortlink/internal/link/trigger/http/dto/req"
 	"shortlink/internal/link/trigger/http/dto/resp"
 	"strings"
 	"time"
 )
 
-type ShortLinkApi struct {
+type LinkApi struct {
 	app app.Application
 }
 
-func NewShortLinkApi(app app.Application, router fiber.Router) {
-	api := &ShortLinkApi{
+func NewLinkApi(app app.Application, router fiber.Router) {
+	api := &LinkApi{
 		app: app,
 	}
 
@@ -33,25 +33,25 @@ func NewShortLinkApi(app app.Application, router fiber.Router) {
 	// 短链接跳转到原始链接
 	router.Get("/:short-uri", api.Redirect)
 	// 创建短链接
-	router.Post("/create", api.CreateShortLink)
+	router.Post("/create", api.CreateLink)
 	// 通过分布式锁创建短链接
-	router.Post("/create/with-lock", api.CreateShortLinkWithLock)
+	router.Post("/create/with-lock", api.CreateLinkWithLock)
 	// 批量创建短链接
-	router.Post("/batch-create", api.BatchCreateShortLink)
+	router.Post("/create-batch", api.BatchCreateLink)
 	// 更新短链接
-	router.Put("/update", api.UpdateShortLink)
+	router.Put("/update", api.UpdateLink)
 	// 分页查询短链接
-	router.Get("/page", api.PageQueryShortLink)
+	router.Get("/page", api.PageQueryLink)
 	// 查询短链接分组内数量
-	router.Get("/group-count", api.ListGroupShortLinkCount)
+	router.Get("/group-count", api.ListGroupLinkCount)
 }
 
 // Redirect 短链接跳转到原始链接
-func (h ShortLinkApi) Redirect(c *fiber.Ctx) error {
+func (h LinkApi) Redirect(c *fiber.Ctx) error {
 
 	shortUri := c.Params("short-uri")
 	if shortUri == "" {
-		return error_no.ShortLinkNotExists
+		return error_no.LinkNotExists
 	}
 
 	os, browser, device, network := toolkit.GetRequestInfo(c)
@@ -66,7 +66,7 @@ func (h ShortLinkApi) Redirect(c *fiber.Ctx) error {
 		})
 	}
 
-	userVisitInfo := link.UserVisitInfo{
+	userVisitInfo := event.UserVisitInfo{
 		ShortUri:    shortUri,
 		RemoteAddr:  c.IP(),
 		OS:          os,
@@ -89,28 +89,29 @@ func (h ShortLinkApi) Redirect(c *fiber.Ctx) error {
 	}
 
 	if originalUrl == "" {
-		return error_no.ShortLinkNotExists
+		return error_no.LinkNotExists
 	}
 
 	return c.Redirect(originalUrl)
 }
 
-// CreateShortLink 创建短链接
-func (h ShortLinkApi) CreateShortLink(c *fiber.Ctx) (err error) {
+// CreateLink 创建短链接
+func (h LinkApi) CreateLink(c *fiber.Ctx) (err error) {
 
-	var reqParam req.ShortLinkCreateReq
+	reqParam := req.LinkCreateReq{}
 	if err = c.BodyParser(&reqParam); err != nil {
 		return err
 	}
 
 	cmd := command.CreateLink{
-		OriginalUrl:  reqParam.OriginalUrl,
-		Gid:          reqParam.Gid,
-		CreateType:   reqParam.CreateType,
-		ValidType:    reqParam.ValidDateType,
-		ValidEndDate: reqParam.ValidDate,
-		Desc:         reqParam.Description,
-		WithLock:     false,
+		OriginalUrl:    reqParam.OriginalUrl,
+		Gid:            reqParam.Gid,
+		CreateType:     reqParam.CreateType,
+		ValidType:      reqParam.ValidType,
+		ValidStartDate: reqParam.StartDate,
+		ValidEndDate:   reqParam.EndDate,
+		Desc:           reqParam.Desc,
+		WithLock:       false,
 	}
 
 	if err = h.app.Commands.CreateLink.Handle(c.Context(), cmd); err != nil {
@@ -118,7 +119,7 @@ func (h ShortLinkApi) CreateShortLink(c *fiber.Ctx) (err error) {
 	}
 
 	if res := cmd.ExecutionResult(); res != nil {
-		response := resp.ShortLinkCreateResp{
+		response := resp.LinkCreateResp{
 			Gid:          res.Gid,
 			OriginalUrl:  res.OriginalUrl,
 			FullShortUrl: res.FullShortUrl,
@@ -128,22 +129,23 @@ func (h ShortLinkApi) CreateShortLink(c *fiber.Ctx) (err error) {
 	return
 }
 
-// CreateShortLinkWithLock 加锁创建短链接
-func (h ShortLinkApi) CreateShortLinkWithLock(c *fiber.Ctx) (err error) {
+// CreateLinkWithLock 加锁创建短链接
+func (h LinkApi) CreateLinkWithLock(c *fiber.Ctx) (err error) {
 
-	var reqParam req.ShortLinkCreateReq
+	reqParam := req.LinkCreateReq{}
 	if err = c.BodyParser(&reqParam); err != nil {
 		return err
 	}
 
 	cmd := command.CreateLink{
-		OriginalUrl:  reqParam.OriginalUrl,
-		Gid:          reqParam.Gid,
-		CreateType:   reqParam.CreateType,
-		ValidType:    reqParam.ValidDateType,
-		ValidEndDate: reqParam.ValidDate,
-		Desc:         reqParam.Description,
-		WithLock:     true,
+		OriginalUrl:    reqParam.OriginalUrl,
+		Gid:            reqParam.Gid,
+		CreateType:     reqParam.CreateType,
+		ValidType:      reqParam.ValidType,
+		ValidStartDate: reqParam.StartDate,
+		ValidEndDate:   reqParam.EndDate,
+		Desc:           reqParam.Desc,
+		WithLock:       true,
 	}
 
 	if err = h.app.Commands.CreateLink.Handle(c.Context(), cmd); err != nil {
@@ -151,7 +153,7 @@ func (h ShortLinkApi) CreateShortLinkWithLock(c *fiber.Ctx) (err error) {
 	}
 
 	if res := cmd.ExecutionResult(); res != nil {
-		response := resp.ShortLinkCreateResp{
+		response := resp.LinkCreateResp{
 			Gid:          res.Gid,
 			OriginalUrl:  res.OriginalUrl,
 			FullShortUrl: res.FullShortUrl,
@@ -161,20 +163,20 @@ func (h ShortLinkApi) CreateShortLinkWithLock(c *fiber.Ctx) (err error) {
 	return
 }
 
-// BatchCreateShortLink 批量创建短链接
-func (h ShortLinkApi) BatchCreateShortLink(c *fiber.Ctx) error {
+// BatchCreateLink 批量创建短链接
+func (h LinkApi) BatchCreateLink(c *fiber.Ctx) error {
 
-	var reqParam req.ShortLinkBatchCreateReq
+	reqParam := req.LinkBatchCreateReq{}
 	if err := c.BodyParser(&reqParam); err != nil {
 		return err
 	}
 
 	cmd := command.CreateLinkBatch{
 		OriginalUrls:   reqParam.OriginalUrls,
-		Descs:          reqParam.Descriptions,
+		Descs:          reqParam.Descs,
 		Gid:            reqParam.Gid,
 		CreateType:     reqParam.CreateType,
-		ValidType:      reqParam.ValidDateType,
+		ValidType:      reqParam.ValidType,
 		ValidStartDate: reqParam.StartDate,
 		ValidEndDate:   reqParam.EndDate,
 	}
@@ -184,8 +186,8 @@ func (h ShortLinkApi) BatchCreateShortLink(c *fiber.Ctx) error {
 	}
 
 	if res := cmd.ExecutionResult(); res != nil {
-		var response resp.ShortLinkBatchCreateResp
-		if err := copier.Copy(&response, &res); err != nil {
+		response := resp.LinkBatchCreateResp{}
+		if err := copier.Copy(&response, res); err != nil {
 			return err
 		}
 		return c.JSON(response)
@@ -194,24 +196,24 @@ func (h ShortLinkApi) BatchCreateShortLink(c *fiber.Ctx) error {
 	return nil
 }
 
-// UpdateShortLink 更新短链接
-func (h ShortLinkApi) UpdateShortLink(c *fiber.Ctx) error {
+// UpdateLink 更新短链接
+func (h LinkApi) UpdateLink(c *fiber.Ctx) error {
 
-	var reqParam req.ShortLinkUpdateReq
+	reqParam := req.LinkUpdateReq{}
 	if err := c.BodyParser(&reqParam); err != nil {
 		return err
 	}
 
 	err := h.app.Commands.UpdateLink.Handle(c.Context(), command.UpdateLink{
-		FullShortUrl:   reqParam.FullShortUrl,
-		OriginalUrl:    reqParam.OriginUrl,
-		OriginalGid:    reqParam.OriginGid,
+		ShortUri:       reqParam.ShortUri,
+		OriginalUrl:    reqParam.OriginalUrl,
+		OriginalGid:    reqParam.OriginalGid,
 		Gid:            reqParam.Gid,
 		Status:         reqParam.Status,
 		ValidType:      reqParam.ValidType,
 		ValidStartDate: reqParam.StartDate,
 		ValidEndDate:   reqParam.EndDate,
-		Desc:           reqParam.Description,
+		Desc:           reqParam.Desc,
 	})
 	if err != nil {
 		return err
@@ -222,10 +224,10 @@ func (h ShortLinkApi) UpdateShortLink(c *fiber.Ctx) error {
 	return nil
 }
 
-// PageQueryShortLink 分页查询短链接
-func (h ShortLinkApi) PageQueryShortLink(c *fiber.Ctx) error {
+// PageQueryLink 分页查询短链接
+func (h LinkApi) PageQueryLink(c *fiber.Ctx) error {
 
-	var reqParam req.ShortLinkPageReq
+	reqParam := req.LinkPageReq{}
 	if err := c.BodyParser(&reqParam); err != nil {
 		return err
 	}
@@ -239,7 +241,7 @@ func (h ShortLinkApi) PageQueryShortLink(c *fiber.Ctx) error {
 		return err
 	}
 
-	var response resp.ShortLinkPageResp
+	response := resp.LinkPageResp{}
 	if err = copier.Copy(&response, &res); err != nil {
 		return err
 	}
@@ -247,8 +249,8 @@ func (h ShortLinkApi) PageQueryShortLink(c *fiber.Ctx) error {
 	return c.JSON(response)
 }
 
-// ListGroupShortLinkCount 查询短链接分组内数量
-func (h ShortLinkApi) ListGroupShortLinkCount(c *fiber.Ctx) error {
+// ListGroupLinkCount 查询短链接分组内数量
+func (h LinkApi) ListGroupLinkCount(c *fiber.Ctx) error {
 
 	gidStr := c.Query("gid")
 	if gidStr == "" {
@@ -261,7 +263,7 @@ func (h ShortLinkApi) ListGroupShortLinkCount(c *fiber.Ctx) error {
 		return err
 	}
 
-	var response resp.ShortLinkGroupCountQueryResp
+	response := resp.LinkGroupCountQueryResp{}
 	if err = copier.Copy(&response, &res); err != nil {
 		return err
 	}

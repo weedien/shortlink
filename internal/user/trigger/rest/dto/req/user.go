@@ -15,18 +15,18 @@ type RecycleBinSaveReq struct {
 	FullShortUrl string `json:"full_short_url"`
 }
 
-type ShortLinkGroupSaveReq struct {
+type LinkGroupSaveReq struct {
 	Name string `json:"name"`
 }
 
-type ShortLinkGroupSortReq []ShortLinkGroupSortDto
+type LinkGroupSortReq []LinkGroupSortDto
 
-type ShortLinkGroupSortDto struct {
+type LinkGroupSortDto struct {
 	Gid       string `json:"gid"`
 	SortOrder int    `json:"sort_order"`
 }
 
-type ShortLinkGroupUpdateReq struct {
+type LinkGroupUpdateReq struct {
 	Gid  string `json:"gid"`
 	Name string `json:"name"`
 }

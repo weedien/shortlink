@@ -32,7 +32,7 @@ func NewPageRecycleBinHandler(
 
 type PageRecycleBin struct {
 	types.PageReq
-	GidList      []string `json:"gidList"`
+	Gids         []string `json:"gids"`
 	EnableStatus int      `json:"enableStatus"`
 }
 

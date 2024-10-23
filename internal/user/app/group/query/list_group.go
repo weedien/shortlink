@@ -7,21 +7,21 @@ import (
 
 type ListGroupHandler struct {
 	readModel        ListGroupReadModel
-	shortLinkService ShortLinkService
+	shortLinkService LinkService
 }
 
 type GroupDto struct {
-	Gid            string `json:"gid"`
-	Name           string `json:"name"`
-	SortOrder      int    `json:"sort_order"`
-	ShortLinkCount int    `json:"short_link_count"`
+	Gid       string `json:"gid"`
+	Name      string `json:"name"`
+	SortOrder int    `json:"sort_order"`
+	LinkCount int    `json:"short_link_count"`
 }
 
 type ListGroupReadModel interface {
 	ListGroup(ctx context.Context, username string) ([]group.Group, error)
 }
 
-func NewListGroupHandler(readModel ListGroupReadModel, shortLinkService ShortLinkService) ListGroupHandler {
+func NewListGroupHandler(readModel ListGroupReadModel, shortLinkService LinkService) ListGroupHandler {
 	return ListGroupHandler{readModel: readModel, shortLinkService: shortLinkService}
 }
 
@@ -36,23 +36,23 @@ func (h ListGroupHandler) Handle(ctx context.Context, username string) (res []Gr
 		gids[i] = g.Gid()
 	}
 
-	linkCount, err := h.shortLinkService.ListGroupShortLinkCount(ctx, gids)
+	linkCount, err := h.shortLinkService.ListGroupLinkCount(ctx, gids)
 	if err != nil {
 		return nil, err
 	}
 
 	linkCountMap := make(map[string]int, len(linkCount))
 	for _, lc := range linkCount {
-		linkCountMap[lc.Gid] = lc.ShortLinkCount
+		linkCountMap[lc.Gid] = lc.LinkCount
 	}
 
 	res = make([]GroupDto, len(groups))
 	for i, g := range groups {
 		res[i] = GroupDto{
-			Gid:            g.Gid(),
-			Name:           g.Name(),
-			SortOrder:      g.SortOrder(),
-			ShortLinkCount: linkCountMap[g.Gid()],
+			Gid:       g.Gid(),
+			Name:      g.Name(),
+			SortOrder: g.SortOrder(),
+			LinkCount: linkCountMap[g.Gid()],
 		}
 	}
 

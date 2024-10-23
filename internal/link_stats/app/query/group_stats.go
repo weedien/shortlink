@@ -8,29 +8,29 @@ import (
 	"time"
 )
 
-type groupLinkStatHandler struct {
-	readModel GroupLinkStatReadModel
+type groupLinkStatsHandler struct {
+	readModel GroupLinkStatsReadModel
 }
 
-type GroupLinkStatHandler decorator.QueryHandler[GroupLinkStat, *LinkStat]
+type GroupLinkStatsHandler decorator.QueryHandler[GroupLinkStats, *LinkStats]
 
-func NewGroupLinkStatHandler(
-	readModel GroupLinkStatReadModel,
+func NewGroupLinkStatsHandler(
+	readModel GroupLinkStatsReadModel,
 	logger *slog.Logger,
 	metricsClient metrics.Client,
-) GroupLinkStatHandler {
+) GroupLinkStatsHandler {
 	if readModel == nil {
 		panic("nil readModel")
 	}
 
-	return decorator.ApplyQueryDecorators[GroupLinkStat, *LinkStat](
-		groupLinkStatHandler{readModel},
+	return decorator.ApplyQueryDecorators[GroupLinkStats, *LinkStats](
+		groupLinkStatsHandler{readModel},
 		logger,
 		metricsClient,
 	)
 }
 
-type GroupLinkStat struct {
+type GroupLinkStats struct {
 	// 分组ID
 	Gid string
 	// 开始日期
@@ -39,11 +39,11 @@ type GroupLinkStat struct {
 	EndDate time.Time
 }
 
-type GroupLinkStatReadModel interface {
-	// GroupLinkStat 获取分组短链接监控数据
-	GroupLinkStat(ctx context.Context, param GroupLinkStat) (*LinkStat, error)
+type GroupLinkStatsReadModel interface {
+	// GroupLinkStats 获取分组短链接监控数据
+	GroupLinkStats(ctx context.Context, param GroupLinkStats) (*LinkStats, error)
 }
 
-func (h groupLinkStatHandler) Handle(ctx context.Context, q GroupLinkStat) (*LinkStat, error) {
-	return h.readModel.GroupLinkStat(ctx, q)
+func (h groupLinkStatsHandler) Handle(ctx context.Context, q GroupLinkStats) (*LinkStats, error) {
+	return h.readModel.GroupLinkStats(ctx, q)
 }

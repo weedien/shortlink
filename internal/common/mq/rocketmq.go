@@ -9,11 +9,11 @@ import (
 )
 
 const (
-	AppShortLinkTopic = "app-short-link-topic"
-	Endpoint          = "193.112.178.249:8081" // rocketmq-proxy
-	ConsumerGroup     = "app-short-link-group"
-	AccessKey         = ""
-	SecretKey         = ""
+	AppLinkTopic  = "app-short-link-topic"
+	Endpoint      = "193.112.178.249:8081" // rocketmq-proxy
+	ConsumerGroup = "app-short-link-group"
+	AccessKey     = ""
+	SecretKey     = ""
 )
 
 var (
@@ -38,7 +38,7 @@ func ConnectToRocketMQ() (rmqclient.Producer, rmqclient.SimpleConsumer, func()) 
 			AccessSecret: SecretKey,
 		},
 	},
-		rmqclient.WithTopics(AppShortLinkTopic),
+		rmqclient.WithTopics(AppLinkTopic),
 	)
 
 	if err != nil {
@@ -60,7 +60,7 @@ func ConnectToRocketMQ() (rmqclient.Producer, rmqclient.SimpleConsumer, func()) 
 	},
 		rmqclient.WithAwaitDuration(awaitDuration),
 		rmqclient.WithSubscriptionExpressions(map[string]*rmqclient.FilterExpression{
-			AppShortLinkTopic: rmqclient.SUB_ALL,
+			AppLinkTopic: rmqclient.SUB_ALL,
 		}),
 	)
 	if err != nil {

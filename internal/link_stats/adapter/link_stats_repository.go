@@ -9,21 +9,21 @@ import (
 	"shortlink/internal/common/constant"
 	"shortlink/internal/common/lock"
 	"shortlink/internal/common/toolkit"
-	"shortlink/internal/link/domain/valobj"
+	"shortlink/internal/link/domain/event"
 	"shortlink/internal/link_stats/adapter/po"
 )
 
-type LinkStatRepository struct {
+type LinkStatsRepository struct {
 	db     *gorm.DB
 	rdb    *redis.Client
 	locker lock.DistributedLock
 }
 
-func NewLinkStatRepository(db *gorm.DB, rdb *redis.Client) LinkStatRepository {
-	return LinkStatRepository{db: db, rdb: rdb}
+func NewLinkStatsRepository(db *gorm.DB, rdb *redis.Client) LinkStatsRepository {
+	return LinkStatsRepository{db: db, rdb: rdb}
 }
 
-func (r LinkStatRepository) SaveLinkStat(ctx context.Context, statsInfo valobj.ShortLinkStatsRecordVo) error {
+func (r LinkStatsRepository) SaveLinkStats(ctx context.Context, statsInfo event.UserVisitInfo) error {
 	lockKey := constant.LockGidUpdateKey + statsInfo.FullShortUrl
 	if _, err := r.locker.Acquire(ctx, lockKey, -1); err != nil {
 		return err
@@ -42,14 +42,14 @@ func (r LinkStatRepository) SaveLinkStat(ctx context.Context, statsInfo valobj.S
 	// 访问统计
 	// 确定两个值的信息，uvFirstFlag 和 uipFirstFlag
 	uv, uip := 0, 0
-	uvAdded, err := r.rdb.SAdd(ctx, constant.ShortLinkStatUvKey+fullShortUrl, statsInfo.UV).Result()
+	uvAdded, err := r.rdb.SAdd(ctx, constant.LinkStatsUvKey+fullShortUrl, statsInfo.UV).Result()
 	if err != nil {
 		return err
 	}
 	if uvAdded > 0 {
 		uv = 1
 	}
-	uipAdded, err := r.rdb.SAdd(ctx, constant.ShortLinkStatUipKey+fullShortUrl, statsInfo.RemoteAddr).Result()
+	uipAdded, err := r.rdb.SAdd(ctx, constant.LinkStatsUipKey+fullShortUrl, statsInfo.RemoteAddr).Result()
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (r LinkStatRepository) SaveLinkStat(ctx context.Context, statsInfo valobj.S
 		return err
 	}
 	// 今日统计
-	linkStatToday := po.LinkStatToday{
+	linkStatToday := po.LinkStatsToday{
 		TodayPv:      1,
 		TodayUv:      uv,
 		TodayUip:     uip,
@@ -176,7 +176,7 @@ func (r LinkStatRepository) SaveLinkStat(ctx context.Context, statsInfo valobj.S
 		return err
 	}
 	// 更新shortLink表中的状态pv, uv, uip
-	linkGotoPo := po.LinkGoto{FullShortUrl: fullShortUrl}
+	linkGotoPo := po.LinkGoto{ShortUri: fullShortUrl}
 	if err := r.db.First(&linkGotoPo).Error; err != nil {
 		return err
 	}

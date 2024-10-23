@@ -27,7 +27,7 @@ func NewGroupApi(app group.Application, router fiber.Router) {
 // Create 新增短链接分组
 func (h GroupApi) Create(c *fiber.Ctx) error {
 	username := c.Locals("username").(string)
-	reqParam := req.ShortLinkGroupSaveReq{}
+	reqParam := req.LinkGroupSaveReq{}
 	if err := c.BodyParser(&reqParam); err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func (h GroupApi) Create(c *fiber.Ctx) error {
 // List 查询短链接分组集合
 func (h GroupApi) List(c *fiber.Ctx) error {
 	username := c.Locals("username").(string)
-	response := resp.ShortLinkGroupResp{}
+	response := resp.LinkGroupResp{}
 	res, err := h.app.Queries.ListGroup.Handle(c.Context(), username)
 	if err != nil {
 		return err
@@ -57,7 +57,7 @@ func (h GroupApi) List(c *fiber.Ctx) error {
 
 // Update 修改短链接分组名称
 func (h GroupApi) Update(c *fiber.Ctx) error {
-	reqParam := req.ShortLinkGroupUpdateReq{}
+	reqParam := req.LinkGroupUpdateReq{}
 	if err := c.BodyParser(&reqParam); err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func (h GroupApi) Delete(c *fiber.Ctx) error {
 
 // Sort 排序短链接分组
 func (h GroupApi) Sort(c *fiber.Ctx) error {
-	reqParam := req.ShortLinkGroupSortReq{}
+	reqParam := req.LinkGroupSortReq{}
 	if err := c.BodyParser(&reqParam); err != nil {
 		return err
 	}

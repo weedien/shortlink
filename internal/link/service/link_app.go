@@ -17,7 +17,7 @@ import (
 	"shortlink/internal/link/domain/link"
 )
 
-func NewShortLinkApplication(
+func NewLinkApplication(
 	db *gorm.DB,
 	rdb *redis.Client,
 	locker lock.DistributedLock,
@@ -28,7 +28,7 @@ func NewShortLinkApplication(
 	metricsClient := metrics.NoOp{}
 
 	factoryConfig := link.FactoryConfig{
-		Domain:         config.ShortLinkDomain.String(),
+		Domain:         config.LinkDomain.String(),
 		UseSSL:         config.UseSSL.Bool(),
 		Whitelist:      config.DomainWhiteList.Array(),
 		DefaultFavicon: config.DefaultFavicon.String(),

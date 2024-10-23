@@ -2,6 +2,9 @@ package link
 
 import "errors"
 
+// Stats 统计信息
+//
+// link_stats 是对 link 领域的一个子领域，它主要负责统计相关的信息
 type Stats struct {
 	clickNum int // 点击次数
 	totalPv  int // 总页面访问次数

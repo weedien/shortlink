@@ -10,16 +10,16 @@ func main() {
 
 	var GroupCountList []resp.GroupCountDTO
 	g1 := resp.GroupCountDTO{
-		Gid:            "public",
-		ShortLinkCount: 99,
+		Gid:       "public",
+		LinkCount: 99,
 	}
 	g2 := resp.GroupCountDTO{
-		Gid:            "test",
-		ShortLinkCount: 11,
+		Gid:       "test",
+		LinkCount: 11,
 	}
 	GroupCountList = append(GroupCountList, g1, g2)
 
-	r := resp.ShortLinkGroupCountQueryResp(GroupCountList)
+	r := resp.LinkGroupCountQueryResp(GroupCountList)
 
 	jsonData, err := json.Marshal(r)
 	if err != nil {

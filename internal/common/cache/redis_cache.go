@@ -163,7 +163,7 @@ func (r RedisDistributedCache) SafeGetWithCacheGetIfAbsent(
 		}
 	}
 	if exceptBloomKey != "" {
-		if _, err = rdb.Get(ctx, fmt.Sprintf(constant.GotoIsNullShortLinkKey, key)).Result(); err != nil {
+		if _, err = rdb.Get(ctx, fmt.Sprintf(constant.GotoIsNullLinkKey, key)).Result(); err != nil {
 			if errors.Is(err, redis.Nil) {
 				deleteFromBloom = false
 			}
@@ -179,7 +179,7 @@ func (r RedisDistributedCache) SafeGetWithCacheGetIfAbsent(
 
 	// step2 获取分布式锁
 	acquired := false
-	lockKey := constant.LockGotoShortLinkKey + key
+	lockKey := constant.LockGotoLinkKey + key
 	if acquired, err = r.locker.Acquire(ctx, lockKey, expiration); err != nil {
 		return result, err
 	}
@@ -295,4 +295,8 @@ func (r RedisDistributedCache) loadAndSet(
 		}
 	}
 	return result, nil
+}
+
+func (r RedisDistributedCache) DoubleDelete(ctx context.Context, key string, delay time.Duration) error {
+	return nil
 }

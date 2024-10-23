@@ -2,8 +2,8 @@ package query
 
 import "time"
 
-// LinkStatAccessRecord 短链接监控访问记录
-type LinkStatAccessRecord struct {
+// LinkStatsAccessRecord 短链接监控访问记录
+type LinkStatsAccessRecord struct {
 	// 访客类型
 	UvType string
 	// 浏览器
@@ -24,8 +24,8 @@ type LinkStatAccessRecord struct {
 	AccessTime time.Time
 }
 
-// LinkStat 短链接监控统计
-type LinkStat struct {
+// LinkStats 短链接监控统计
+type LinkStats struct {
 	// PV
 	Pv int `json:"pv"`
 	// UV
@@ -35,27 +35,27 @@ type LinkStat struct {
 	// 小时访问统计
 	Hourly []int `json:"hourly"`
 	// 日访问统计
-	Daily []LinkStatAccessDaily `json:"daily"`
+	Daily []LinkStatsAccessDaily `json:"daily"`
 	// 周访问统计
 	Weekly []int `json:"weekly"`
 	// 地区访问统计（仅国内）
-	LocationCnStat []LinkStatLocale `json:"locationCnStat"`
+	LocationCnStat []LinkStatsLocale `json:"locationCnStat"`
 	// 高频访问IP统计
-	TopIpStat []LinkStatTopIp `json:"topIpStat"`
+	TopIpStat []LinkStatsTopIp `json:"topIpStat"`
 	// 浏览器统计
-	BrowserStat []LinkStatBrowser `json:"browserStat"`
+	BrowserStat []LinkStatsBrowser `json:"browserStat"`
 	// 操作系统统计
-	OsStat []LinkStatOs `json:"osStat"`
+	OsStat []LinkStatsOs `json:"osStat"`
 	// 访客类型统计
-	VisitorTypeStat []LinkStatUv `json:"visitorTypeStat"`
+	VisitorTypeStat []LinkStatsUv `json:"visitorTypeStat"`
 	// 设备统计
-	DeviceStat []LinkStatDevice `json:"deviceStat"`
+	DeviceStat []LinkStatsDevice `json:"deviceStat"`
 	// 网络统计
-	NetworkStat []LinkStatNetwork `json:"networkStat"`
+	NetworkStat []LinkStatsNetwork `json:"networkStat"`
 }
 
-// LinkStatAccessDaily 短链接监控访问统计基础响应
-type LinkStatAccessDaily struct {
+// LinkStatsAccessDaily 短链接监控访问统计基础响应
+type LinkStatsAccessDaily struct {
 	// 日期
 	Date string `json:"date"`
 	// PV
@@ -66,8 +66,8 @@ type LinkStatAccessDaily struct {
 	Uip int `json:"uip"`
 }
 
-// LinkStatBrowser 浏览器统计响应
-type LinkStatBrowser struct {
+// LinkStatsBrowser 浏览器统计响应
+type LinkStatsBrowser struct {
 	// 统计
 	Cnt int `json:"count"`
 	// 浏览器
@@ -76,8 +76,8 @@ type LinkStatBrowser struct {
 	Ratio float64 `json:"ratio"`
 }
 
-// LinkStatDevice 设备统计响应
-type LinkStatDevice struct {
+// LinkStatsDevice 设备统计响应
+type LinkStatsDevice struct {
 	// 统计
 	Cnt int `json:"count"`
 	// 设备
@@ -86,8 +86,8 @@ type LinkStatDevice struct {
 	Ratio float64 `json:"ratio"`
 }
 
-// LinkStatLocale 地区统计响应
-type LinkStatLocale struct {
+// LinkStatsLocale 地区统计响应
+type LinkStatsLocale struct {
 	// 统计
 	Cnt int `json:"count"`
 	// 地区
@@ -96,8 +96,8 @@ type LinkStatLocale struct {
 	Ratio float64 `json:"ratio"`
 }
 
-// LinkStatNetwork 网络统计响应
-type LinkStatNetwork struct {
+// LinkStatsNetwork 网络统计响应
+type LinkStatsNetwork struct {
 	// 统计
 	Cnt int `json:"count"`
 	// 网络
@@ -106,8 +106,8 @@ type LinkStatNetwork struct {
 	Ratio float64 `json:"ratio"`
 }
 
-// LinkStatOs 操作系统统计响应
-type LinkStatOs struct {
+// LinkStatsOs 操作系统统计响应
+type LinkStatsOs struct {
 	// 统计
 	Cnt int `json:"count"`
 	// 操作系统
@@ -116,16 +116,16 @@ type LinkStatOs struct {
 	Ratio float64 `json:"ratio"`
 }
 
-// LinkStatTopIp 短链接高频访问IP统计响应
-type LinkStatTopIp struct {
+// LinkStatsTopIp 短链接高频访问IP统计响应
+type LinkStatsTopIp struct {
 	// 统计
 	Cnt int `json:"count"`
 	// IP
 	Ip string `json:"ip"`
 }
 
-// LinkStatUv 短链接监控访问统计UV响应
-type LinkStatUv struct {
+// LinkStatsUv 短链接监控访问统计UV响应
+type LinkStatsUv struct {
 	// 统计
 	Cnt int `json:"count"`
 	// 访客类型

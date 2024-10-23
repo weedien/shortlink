@@ -33,6 +33,8 @@ func NewUpdateLinkHandler(
 }
 
 type UpdateLink struct {
+	// 短链接
+	ShortUri string
 	// 完整短链接
 	FullShortUrl string
 	// 原始链接

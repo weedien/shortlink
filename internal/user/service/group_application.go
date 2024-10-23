@@ -10,7 +10,7 @@ import (
 	"shortlink/internal/user/app/group/query"
 )
 
-func NewGroupApplication(db *gorm.DB, rdb *redis.Client, linkService query.ShortLinkService) group.Application {
+func NewGroupApplication(db *gorm.DB, rdb *redis.Client, linkService query.LinkService) group.Application {
 
 	repository := adapter.NewGroupRepositoryImpl(db, rdb)
 	locker := lock.NewRedisLock(rdb)

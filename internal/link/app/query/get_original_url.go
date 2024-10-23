@@ -11,7 +11,7 @@ import (
 	"shortlink/internal/common/decorator"
 	"shortlink/internal/common/error_no"
 	"shortlink/internal/common/metrics"
-	"shortlink/internal/link/app/event"
+	"shortlink/internal/link/domain/event"
 	"shortlink/internal/link/domain/link"
 )
 
@@ -42,7 +42,7 @@ func NewGetOriginalUrlHandler(
 
 type GetOriginalUrl struct {
 	ShortUri      string
-	UserVisitInfo link.UserVisitInfo
+	UserVisitInfo event.UserVisitInfo
 }
 
 type GetOriginalUrlReadModel interface {
@@ -62,7 +62,7 @@ func (h getOriginalUrlHandler) Handle(ctx context.Context, q GetOriginalUrl) (re
 		}
 		originalUrl := lk.OriginalUrl()
 		if originalUrl == "" {
-			err = error_no.ShortLinkNotExists
+			err = error_no.LinkNotExists
 			return
 		}
 		switch lk.Status() {
@@ -70,16 +70,16 @@ func (h getOriginalUrlHandler) Handle(ctx context.Context, q GetOriginalUrl) (re
 			res = originalUrl
 			return
 		case link.StatusExpired:
-			err = error_no.ShortLinkExpired
+			err = error_no.LinkExpired
 			return
 		case link.StatusForbidden:
-			err = error_no.ShortLinkForbidden
+			err = error_no.LinkForbidden
 			return
 		case link.StatusReserved:
-			err = error_no.ShortLinkReserved
+			err = error_no.LinkReserved
 			return
 		default:
-			err = error_no.ShortLinkNotExists
+			err = error_no.LinkNotExists
 			return
 		}
 	}
@@ -87,12 +87,12 @@ func (h getOriginalUrlHandler) Handle(ctx context.Context, q GetOriginalUrl) (re
 	var result interface{}
 	result, err = h.distributedCache.SafeGetWithCacheCheckFilter(
 		ctx,
-		constant.GotoShortLinkKey+q.ShortUri,
+		constant.GotoLinkKey+q.ShortUri,
 		reflect.TypeOf(""),
 		fetchFn,
 		constant.NeverExpire,
 		cache.ShortUriCreateBloomFilter,
-		fmt.Sprintf(constant.GotoIsNullShortLinkKey, q.ShortUri),
+		fmt.Sprintf(constant.GotoIsNullLinkKey, q.ShortUri),
 	)
 	if err != nil {
 		return

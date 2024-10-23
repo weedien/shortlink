@@ -2,11 +2,11 @@ package query
 
 import "context"
 
-type GroupShortLinkCountDto struct {
-	Gid            string `json:"gid"`
-	ShortLinkCount int    `json:"short_link_count"`
+type GroupLinkCountDto struct {
+	Gid       string `json:"gid"`
+	LinkCount int    `json:"short_link_count"`
 }
 
-type ShortLinkService interface {
-	ListGroupShortLinkCount(ctx context.Context, gids []string) ([]GroupShortLinkCountDto, error)
+type LinkService interface {
+	ListGroupLinkCount(ctx context.Context, gids []string) ([]GroupLinkCountDto, error)
 }

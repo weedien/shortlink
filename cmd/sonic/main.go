@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	recordInfo := valobj.ShortLinkStatRecordVo{
+	recordInfo := valobj.LinkStatsRecordVo{
 		FullShortUrl: "https://t.cn/8fj3",
 		RemoteAddr:   "175.16.23.33",
 		OS:           "Windows",
